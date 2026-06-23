@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漢字 Study — Kanji Look &amp; Learn</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --card: #161616;
+    --card2: #1e1e1e;
+    --border: #2a2a2a;
+    --accent: #e83a14;
+    --accent2: #ff6040;
+    --gold: #d4a017;
+    --text: #f0ead6;
+    --muted: #888;
+    --muted2: #555;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Helvetica Neue', Arial, sans-serif; min-height: 100vh; overflow-x: hidden; }
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── HOME ── */
+  #home { align-items: center; justify-content: center; padding: 40px 20px; text-align: center; }
+  .home-kanji { font-size: 120px; line-height: 1; color: var(--text); letter-spacing: -4px; opacity: 0.08; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none; user-select: none; z-index: 0; }
+  .home-content { position: relative; z-index: 1; }
+  .home-title { font-size: 14px; letter-spacing: 6px; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 16px; }
+  .home-headline { font-size: 42px; font-weight: 700; color: var(--text); line-height: 1.1; margin-bottom: 8px; }
+  .home-sub { color: var(--muted); font-size: 15px; margin-bottom: 48px; }
+  .mode-cards { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+  .mode-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px 28px; width: 220px; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .mode-card:hover { border-color: var(--accent); transform: translateY(-3px); background: var(--card2); }
+  .mode-icon { font-size: 44px; margin-bottom: 16px; display: block; }
+  .mode-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .mode-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .home-stats { margin-top: 40px; display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat-n { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .stat-l { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ── BROWSE ── */
+  #browse { padding: 0; }
+  .browse-header { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 20px; position: sticky; top: 0; z-index: 10; }
+  .browse-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .back-btn { background: none; border: 1px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .browse-title { font-size: 18px; font-weight: 700; flex: 1; }
+  .start-quiz-btn { background: var(--accent); color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.2s; }
+  .start-quiz-btn:hover { background: var(--accent2); }
+  .start-quiz-btn:disabled { background: var(--muted2); cursor: not-allowed; }
+  .filter-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .filter-btn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 4px 10px; border-radius: 20px; cursor: pointer; font-size: 12px; transition: all 0.15s; white-space: nowrap; }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--accent); color: var(--accent); }
+  .sel-count { font-size: 12px; color: var(--muted); margin-left: auto; }
+  .sel-actions { display: flex; gap: 8px; }
+  .sel-btn { font-size: 12px; background: none; border: 1px solid var(--border); color: var(--muted); padding: 4px 10px; border-radius: 6px; cursor: pointer; }
+  .sel-btn:hover { color: var(--text); border-color: var(--muted); }
+  .kanji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; padding: 16px; }
+  .kanji-cell { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px; text-align: center; cursor: pointer; transition: all 0.15s; user-select: none; }
+  .kanji-cell:hover { border-color: var(--muted); }
+  .kanji-cell.selected { border-color: var(--accent); background: rgba(232,58,20,0.12); }
+  .kanji-cell .kchar { font-size: 28px; display: block; line-height: 1.2; }
+  .kanji-cell .kmean { font-size: 9px; color: var(--muted); display: block; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── QUIZ CONFIG ── */
+  #quizconfig { align-items: center; justify-content: center; padding: 40px 20px; }
+  .config-box { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 36px; max-width: 460px; width: 100%; }
+  .config-title { font-size: 22px; font-weight: 700; margin-bottom: 24px; }
+  .config-section { margin-bottom: 24px; }
+  .config-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .config-options { display: flex; gap: 8px; flex-wrap: wrap; }
+  .config-opt { background: none; border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.15s; }
+  .config-opt:hover { border-color: var(--muted); }
+  .config-opt.active { border-color: var(--accent); background: rgba(232,58,20,0.15); color: var(--accent); font-weight: 600; }
+  .config-start { background: var(--accent); color: white; border: none; padding: 14px 32px; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 700; width: 100%; margin-top: 8px; transition: background 0.2s; }
+  .config-start:hover { background: var(--accent2); }
+  .config-back { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; margin-top: 14px; width: 100%; }
+  .config-back:hover { color: var(--text); }
+  .config-info { background: var(--card2); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+  /* ── QUIZ ── */
+  #quiz { align-items: center; padding: 20px; }
+  .quiz-header { width: 100%; max-width: 600px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .quiz-back { background: none; border: 1px solid var(--border); color: var(--muted); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .quiz-back:hover { color: var(--text); border-color: var(--muted); }
+  .quiz-progress-wrap { flex: 1; }
+  .quiz-prog-bar { background: var(--border); border-radius: 4px; height: 4px; width: 100%; overflow: hidden; }
+  .quiz-prog-fill { background: var(--accent); height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .quiz-prog-txt { font-size: 12px; color: var(--muted); margin-top: 4px; text-align: right; }
+  .quiz-score { display: flex; gap: 12px; font-size: 13px; }
+  .score-ok { color: var(--green); font-weight: 600; }
+  .score-no { color: var(--red); font-weight: 600; }
+  .quiz-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 40px 32px; max-width: 600px; width: 100%; text-align: center; min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .quiz-mode-tag { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; }
+  .quiz-prompt { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+  .quiz-hero { font-size: 96px; line-height: 1; color: var(--text); margin-bottom: 8px; transition: opacity 0.2s; }
+  .quiz-hero.word { font-size: 42px; }
+  .quiz-reading { font-size: 16px; color: var(--muted); margin-bottom: 24px; font-style: italic; }
+  .quiz-hint { font-size: 13px; color: var(--muted2); margin-bottom: 8px; }
+  .quiz-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 8px; }
+  .choice-btn { background: var(--card2); border: 1px solid var(--border); color: var(--text); padding: 14px 16px; border-radius: 10px; cursor: pointer; font-size: 14px; transition: all 0.15s; text-align: left; line-height: 1.4; }
+  .choice-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(232,58,20,0.1); }
+  .choice-btn.correct { border-color: var(--green); background: rgba(46,204,113,0.15); color: var(--green); }
+  .choice-btn.wrong { border-color: var(--red); background: rgba(231,76,60,0.15); color: var(--red); }
+  .choice-btn:disabled { cursor: default; }
+  .quiz-input-wrap { width: 100%; margin-top: 12px; }
+  .quiz-input { background: var(--card2); border: 1px solid var(--border); color: var(--text); padding: 14px 16px; border-radius: 10px; font-size: 16px; width: 100%; outline: none; text-align: center; }
+  .quiz-input:focus { border-color: var(--accent); }
+  .quiz-submit { background: var(--accent); color: white; border: none; padding: 12px 32px; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 600; width: 100%; margin-top: 10px; }
+  .quiz-submit:hover { background: var(--accent2); }
+  .quiz-reveal { margin-top: 14px; display: none; }
+  .quiz-reveal.show { display: block; }
+  .reveal-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .reveal-val { font-size: 20px; color: var(--text); font-weight: 600; }
+  .next-btn { background: var(--card2); border: 1px solid var(--border); color: var(--text); padding: 12px 32px; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 600; width: 100%; margin-top: 14px; transition: all 0.15s; }
+  .next-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── RESULTS ── */
+  #results { align-items: center; justify-content: center; padding: 40px 20px; text-align: center; }
+  .results-box { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 48px 40px; max-width: 480px; width: 100%; }
+  .results-icon { font-size: 60px; margin-bottom: 16px; }
+  .results-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .results-sub { color: var(--muted); font-size: 15px; margin-bottom: 32px; }
+  .results-stats { display: flex; gap: 24px; justify-content: center; margin-bottom: 32px; }
+  .results-stat { }
+  .results-stat-n { font-size: 36px; font-weight: 700; }
+  .results-stat-l { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+  .results-pct { font-size: 56px; font-weight: 800; margin-bottom: 8px; }
+  .results-actions { display: flex; flex-direction: column; gap: 10px; }
+  .results-btn { padding: 14px; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 600; border: none; transition: all 0.2s; }
+  .results-btn.primary { background: var(--accent); color: white; }
+  .results-btn.primary:hover { background: var(--accent2); }
+  .results-btn.secondary { background: var(--card2); border: 1px solid var(--border); color: var(--text); }
+  .results-btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .missed-list { margin-top: 24px; max-height: 160px; overflow-y: auto; text-align: left; }
+  .missed-list h4 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .missed-item { display: flex; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); align-items: center; }
+  .missed-k { font-size: 22px; min-width: 32px; }
+  .missed-m { font-size: 13px; color: var(--muted); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 2px; }
+
+  @media (max-width: 480px) {
+    .quiz-hero { font-size: 72px; }
+    .quiz-choices { grid-template-columns: 1fr; }
+    .mode-cards { flex-direction: column; align-items: center; }
+    .config-box { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ HOME ═══ -->
+<div class="screen active" id="home">
+  <div class="home-kanji">漢</div>
+  <div class="home-content">
+    <div class="home-title">Kanji Look &amp; Learn</div>
+    <div class="home-headline">漢字を学ぼう</div>
+    <div class="home-sub">512 kanji · readings · vocabulary</div>
+    <div class="mode-cards">
+      <div class="mode-card" onclick="startBrowse('kanji')">
+        <span class="mode-icon">字</span>
+        <div class="mode-title">Plain Kanji</div>
+        <div class="mode-desc">Study individual kanji — meaning, on/kun readings</div>
+      </div>
+      <div class="mode-card" onclick="startBrowse('words')">
+        <span class="mode-icon">言葉</span>
+        <div class="mode-title">Vocabulary</div>
+        <div class="mode-desc">Study words and compounds built from the kanji</div>
+      </div>
+    </div>
+    <div class="home-stats">
+      <div class="stat"><div class="stat-n">512</div><div class="stat-l">Kanji</div></div>
+      <div class="stat"><div class="stat-n">45</div><div class="stat-l">Units</div></div>
+      <div class="stat"><div class="stat-n">1500+</div><div class="stat-l">Vocabulary</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BROWSE ═══ -->
+<div class="screen" id="browse">
+  <div class="browse-header">
+    <div class="browse-top">
+      <button class="back-btn" onclick="showScreen('home')">← Home</button>
+      <div class="browse-title" id="browse-title">Select Kanji</div>
+      <button class="start-quiz-btn" id="start-quiz-btn" onclick="goToConfig()" disabled>Quiz →</button>
+    </div>
+    <div class="filter-row" id="filter-row"></div>
+    <div class="filter-row" style="margin-top:8px">
+      <div class="sel-count" id="sel-count">0 selected</div>
+      <div class="sel-actions">
+        <button class="sel-btn" onclick="selectAll()">All shown</button>
+        <button class="sel-btn" onclick="clearSel()">Clear</button>
+      </div>
+    </div>
+  </div>
+  <div class="kanji-grid" id="kanji-grid"></div>
+</div>
+
+<!-- ═══ QUIZ CONFIG ═══ -->
+<div class="screen" id="quizconfig">
+  <div class="config-box">
+    <div class="config-title">Quiz Settings</div>
+    <div class="config-info" id="config-info"></div>
+    <div class="config-section">
+      <div class="config-label">Direction</div>
+      <div class="config-options">
+        <button class="config-opt active" data-group="dir" data-val="jp-en" onclick="setOpt(this,'dir')">JP → EN</button>
+        <button class="config-opt" data-group="dir" data-val="en-jp" onclick="setOpt(this,'dir')">EN → JP</button>
+        <button class="config-opt" data-group="dir" data-val="both" onclick="setOpt(this,'dir')">Both</button>
+      </div>
+    </div>
+    <div class="config-section">
+      <div class="config-label">Format</div>
+      <div class="config-options">
+        <button class="config-opt active" data-group="fmt" data-val="choice" onclick="setOpt(this,'fmt')">Multiple choice</button>
+        <button class="config-opt" data-group="fmt" data-val="type" onclick="setOpt(this,'fmt')">Type answer</button>
+      </div>
+    </div>
+    <div class="config-section">
+      <div class="config-label">Order</div>
+      <div class="config-options">
+        <button class="config-opt active" data-group="order" data-val="shuffle" onclick="setOpt(this,'order')">Shuffle</button>
+        <button class="config-opt" data-group="order" data-val="seq" onclick="setOpt(this,'order')">In order</button>
+      </div>
+    </div>
+    <button class="config-start" onclick="startQuiz()">Start Quiz</button>
+    <button class="config-back" onclick="showScreen('browse')">← Back to selection</button>
+  </div>
+</div>
+
+<!-- ═══ QUIZ ═══ -->
+<div class="screen" id="quiz">
+  <div class="quiz-header">
+    <button class="quiz-back" onclick="showScreen('home')">✕</button>
+    <div class="quiz-progress-wrap">
+      <div class="quiz-prog-bar"><div class="quiz-prog-fill" id="prog-fill"></div></div>
+      <div class="quiz-prog-txt" id="prog-txt"></div>
+    </div>
+    <div class="quiz-score">
+      <span class="score-ok" id="score-ok">✓ 0</span>
+      <span class="score-no" id="score-no">✗ 0</span>
+    </div>
+  </div>
+  <div class="quiz-card" id="quiz-card">
+    <div class="quiz-mode-tag" id="q-mode-tag"></div>
+    <div class="quiz-prompt" id="q-prompt"></div>
+    <div class="quiz-hero" id="q-hero"></div>
+    <div class="quiz-reading" id="q-reading"></div>
+    <div class="quiz-hint" id="q-hint"></div>
+    <div class="quiz-choices" id="q-choices"></div>
+    <div class="quiz-input-wrap" id="q-input-wrap" style="display:none">
+      <input class="quiz-input" id="q-input" placeholder="Type your answer…" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="quiz-submit" onclick="checkTyped()">Check</button>
+    </div>
+    <div class="quiz-reveal" id="q-reveal">
+      <div class="reveal-label" id="reveal-label"></div>
+      <div class="reveal-val" id="reveal-val"></div>
+    </div>
+    <button class="next-btn" id="next-btn" style="display:none" onclick="nextQuestion()">Next →</button>
+  </div>
+</div>
+
+<!-- ═══ RESULTS ═══ -->
+<div class="screen" id="results">
+  <div class="results-box">
+    <div class="results-icon" id="res-icon"></div>
+    <div class="results-pct" id="res-pct"></div>
+    <div class="results-title" id="res-title"></div>
+    <div class="results-sub" id="res-sub"></div>
+    <div class="results-stats">
+      <div class="results-stat">
+        <div class="results-stat-n score-ok" id="res-ok"></div>
+        <div class="results-stat-l">Correct</div>
+      </div>
+      <div class="results-stat">
+        <div class="results-stat-n score-no" id="res-no"></div>
+        <div class="results-stat-l">Wrong</div>
+      </div>
+      <div class="results-stat">
+        <div class="results-stat-n" id="res-tot"></div>
+        <div class="results-stat-l">Total</div>
+      </div>
+    </div>
+    <div class="missed-list" id="res-missed"></div>
+    <div class="results-actions">
+      <button class="results-btn primary" onclick="startQuiz()">Retry Same</button>
+      <button class="results-btn secondary" onclick="showScreen('browse')">New Selection</button>
+      <button class="results-btn secondary" onclick="showScreen('home')">Home</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  KANJI DATA  — readings and meanings are public linguistic facts
+// ═══════════════════════════════════════════════════════════
+const KANJI = [
+// Unit 1 — Numbers
+{k:'一',on:'イチ・イツ',kun:'ひと(つ)',m:['one'],u:1,un:'Numbers',w:[['一つ','ひとつ','one thing'],['一月','いちがつ','January'],['一人','ひとり','one person']]},
+{k:'二',on:'ニ',kun:'ふた(つ)',m:['two'],u:1,un:'Numbers',w:[['二つ','ふたつ','two things'],['二月','にがつ','February'],['二人','ふたり','two people']]},
+{k:'三',on:'サン',kun:'みっ(つ)',m:['three'],u:1,un:'Numbers',w:[['三つ','みっつ','three things'],['三月','さんがつ','March']]},
+{k:'四',on:'シ',kun:'よっ(つ)',m:['four'],u:1,un:'Numbers',w:[['四つ','よっつ','four things'],['四月','しがつ','April']]},
+{k:'五',on:'ゴ',kun:'いつ(つ)',m:['five'],u:1,un:'Numbers',w:[['五つ','いつつ','five things'],['五月','ごがつ','May']]},
+{k:'六',on:'ロク',kun:'むっ(つ)',m:['six'],u:1,un:'Numbers',w:[['六つ','むっつ','six things'],['六月','ろくがつ','June']]},
+{k:'七',on:'シチ',kun:'なな(つ)',m:['seven'],u:1,un:'Numbers',w:[['七つ','ななつ','seven things'],['七月','しちがつ','July']]},
+{k:'八',on:'ハチ',kun:'やっ(つ)',m:['eight'],u:1,un:'Numbers',w:[['八つ','やっつ','eight things'],['八月','はちがつ','August']]},
+{k:'九',on:'ク・キュウ',kun:'ここの(つ)',m:['nine'],u:1,un:'Numbers',w:[['九つ','ここのつ','nine things'],['九月','くがつ','September']]},
+{k:'十',on:'ジュウ',kun:'とお',m:['ten'],u:1,un:'Numbers',w:[['十','じゅう','ten'],['十月','じゅうがつ','October'],['二十','にじゅう','twenty']]},
+{k:'百',on:'ヒャク',kun:'',m:['hundred'],u:1,un:'Numbers',w:[['百','ひゃく','hundred'],['百円','ひゃくえん','100 yen'],['三百','さんびゃく','three hundred']]},
+{k:'千',on:'セン',kun:'ち',m:['thousand'],u:1,un:'Numbers',w:[['千','せん','thousand'],['三千','さんぜん','three thousand']]},
+{k:'万',on:'マン・バン',kun:'',m:['ten thousand'],u:1,un:'Numbers',w:[['一万','いちまん','ten thousand'],['万年筆','まんねんひつ','fountain pen']]},
+// Unit 2 — Time
+{k:'年',on:'ネン',kun:'とし',m:['year'],u:2,un:'Time',w:[['今年','ことし','this year'],['来年','らいねん','next year'],['去年','きょねん','last year']]},
+{k:'月',on:'ゲツ・ガツ',kun:'つき',m:['month','moon'],u:2,un:'Time',w:[['月曜日','げつようび','Monday'],['毎月','まいつき','every month']]},
+{k:'日',on:'ニチ・ジツ',kun:'ひ・か',m:['day','sun'],u:2,un:'Time',w:[['日曜日','にちようび','Sunday'],['今日','きょう','today'],['毎日','まいにち','every day']]},
+{k:'時',on:'ジ',kun:'とき',m:['time','hour','o\'clock'],u:2,un:'Time',w:[['時間','じかん','hour'],['何時','なんじ','what time'],['三時','さんじ','3 o\'clock']]},
+{k:'分',on:'フン・ブン',kun:'わ(かる)',m:['minute','understand','part'],u:2,un:'Time',w:[['五分','ごふん','5 minutes'],['自分','じぶん','oneself'],['分かる','わかる','to understand']]},
+{k:'半',on:'ハン',kun:'なか(ば)',m:['half'],u:2,un:'Time',w:[['半分','はんぶん','half'],['一時半','いちじはん','1:30'],['半年','はんとし','half a year']]},
+{k:'週',on:'シュウ',kun:'',m:['week'],u:2,un:'Time',w:[['今週','こんしゅう','this week'],['来週','らいしゅう','next week'],['毎週','まいしゅう','every week']]},
+{k:'曜',on:'ヨウ',kun:'',m:['day of the week'],u:2,un:'Time',w:[['月曜日','げつようび','Monday'],['水曜日','すいようび','Wednesday'],['何曜日','なんようび','what day?']]},
+// Unit 3 — When
+{k:'今',on:'コン・キン',kun:'いま',m:['now','present','current'],u:3,un:'When',w:[['今','いま','now'],['今日','きょう','today'],['今年','ことし','this year']]},
+{k:'毎',on:'マイ',kun:'',m:['every','each'],u:3,un:'When',w:[['毎日','まいにち','every day'],['毎朝','まいあさ','every morning'],['毎年','まいとし','every year']]},
+{k:'何',on:'カ',kun:'なに・なん',m:['what','how many'],u:3,un:'When',w:[['何','なに','what'],['何時','なんじ','what time'],['何人','なんにん','how many people']]},
+{k:'先',on:'セン',kun:'さき',m:['previous','ahead','before'],u:3,un:'When',w:[['先生','せんせい','teacher'],['先週','せんしゅう','last week'],['先月','せんげつ','last month']]},
+{k:'来',on:'ライ',kun:'く(る)',m:['come','next'],u:3,un:'When',w:[['来る','くる','to come'],['来年','らいねん','next year'],['来週','らいしゅう','next week']]},
+{k:'去',on:'キョ',kun:'さ(る)',m:['past','leave'],u:3,un:'When',w:[['去年','きょねん','last year']]},
+{k:'昨',on:'サク',kun:'',m:['yesterday','previous'],u:3,un:'When',w:[['昨日','きのう','yesterday'],['昨年','さくねん','last year'],['昨夜','さくや','last night']]},
+{k:'明',on:'メイ・ミョウ',kun:'あか(るい)',m:['bright','next','clear'],u:3,un:'When',w:[['明日','あした','tomorrow'],['明るい','あかるい','bright'],['明後日','あさって','day after tomorrow']]},
+// Unit 4 — Parts of day
+{k:'午',on:'ゴ',kun:'',m:['noon'],u:4,un:'Parts of Day',w:[['午前','ごぜん','AM / morning'],['午後','ごご','PM / afternoon'],['正午','しょうご','noon']]},
+{k:'前',on:'ゼン',kun:'まえ',m:['before','front'],u:4,un:'Parts of Day',w:[['前','まえ','before / front'],['午前','ごぜん','AM'],['前日','ぜんじつ','the day before']]},
+{k:'後',on:'ゴ・コウ',kun:'のち・うし(ろ)',m:['after','behind','back'],u:4,un:'Parts of Day',w:[['後','うしろ','behind'],['午後','ごご','PM'],['最後','さいご','last / final']]},
+{k:'朝',on:'チョウ',kun:'あさ',m:['morning'],u:4,un:'Parts of Day',w:[['朝','あさ','morning'],['毎朝','まいあさ','every morning'],['朝食','ちょうしょく','breakfast']]},
+{k:'昼',on:'チュウ',kun:'ひる',m:['noon','daytime'],u:4,un:'Parts of Day',w:[['昼','ひる','noon / daytime'],['昼食','ちゅうしょく','lunch'],['昼間','ひるま','daytime']]},
+{k:'夕',on:'ユウ',kun:'ゆう',m:['evening','dusk'],u:4,un:'Parts of Day',w:[['夕方','ゆうがた','evening'],['夕食','ゆうしょく','dinner'],['夕日','ゆうひ','setting sun']]},
+{k:'夜',on:'ヤ',kun:'よる・よ',m:['night'],u:4,un:'Parts of Day',w:[['夜','よる','night'],['今夜','こんや','tonight'],['夜中','よなか','midnight']]},
+{k:'晩',on:'バン',kun:'',m:['evening'],u:4,un:'Parts of Day',w:[['今晩','こんばん','tonight'],['毎晩','まいばん','every evening'],['晩ご飯','ばんごはん','dinner']]},
+// Unit 5 — Seasons
+{k:'春',on:'シュン',kun:'はる',m:['spring'],u:5,un:'Seasons',w:[['春','はる','spring'],['春休み','はるやすみ','spring vacation']]},
+{k:'夏',on:'カ',kun:'なつ',m:['summer'],u:5,un:'Seasons',w:[['夏','なつ','summer'],['夏休み','なつやすみ','summer vacation'],['真夏','まなつ','midsummer']]},
+{k:'秋',on:'シュウ',kun:'あき',m:['autumn','fall'],u:5,un:'Seasons',w:[['秋','あき','autumn'],['秋分','しゅうぶん','autumn equinox']]},
+{k:'冬',on:'トウ',kun:'ふゆ',m:['winter'],u:5,un:'Seasons',w:[['冬','ふゆ','winter'],['冬休み','ふゆやすみ','winter vacation'],['真冬','まふゆ','midwinter']]},
+// Unit 6 — Nature / landscape
+{k:'山',on:'サン',kun:'やま',m:['mountain'],u:6,un:'Nature',w:[['山','やま','mountain'],['富士山','ふじさん','Mt. Fuji'],['火山','かざん','volcano']]},
+{k:'川',on:'セン',kun:'かわ',m:['river'],u:6,un:'Nature',w:[['川','かわ','river'],['小川','おがわ','stream']]},
+{k:'海',on:'カイ',kun:'うみ',m:['sea','ocean'],u:6,un:'Nature',w:[['海','うみ','sea'],['海外','かいがい','overseas'],['日本海','にほんかい','Sea of Japan']]},
+{k:'池',on:'チ',kun:'いけ',m:['pond'],u:6,un:'Nature',w:[['池','いけ','pond'],['電池','でんち','battery']]},
+{k:'湖',on:'コ',kun:'みずうみ',m:['lake'],u:6,un:'Nature',w:[['湖','みずうみ','lake'],['琵琶湖','びわこ','Lake Biwa']]},
+{k:'森',on:'シン',kun:'もり',m:['forest'],u:6,un:'Nature',w:[['森','もり','forest'],['森林','しんりん','woods']]},
+{k:'林',on:'リン',kun:'はやし',m:['woods','grove'],u:6,un:'Nature',w:[['林','はやし','woods'],['森林','しんりん','forest'],['林業','りんぎょう','forestry']]},
+{k:'野',on:'ヤ',kun:'の',m:['field','plains','wild'],u:6,un:'Nature',w:[['野原','のはら','field'],['野球','やきゅう','baseball']]},
+{k:'原',on:'ゲン',kun:'はら',m:['field','plain','original'],u:6,un:'Nature',w:[['原因','げんいん','cause'],['高原','こうげん','plateau']]},
+{k:'島',on:'トウ',kun:'しま',m:['island'],u:6,un:'Nature',w:[['島','しま','island'],['半島','はんとう','peninsula'],['列島','れっとう','archipelago']]},
+// Unit 7 — Elements
+{k:'土',on:'ド・ト',kun:'つち',m:['earth','soil'],u:7,un:'Elements',w:[['土','つち','soil'],['土曜日','どようび','Saturday'],['土地','とち','land']]},
+{k:'石',on:'セキ',kun:'いし',m:['stone','rock'],u:7,un:'Elements',w:[['石','いし','stone'],['石油','せきゆ','petroleum']]},
+{k:'火',on:'カ',kun:'ひ',m:['fire','flame'],u:7,un:'Elements',w:[['火','ひ','fire'],['火曜日','かようび','Tuesday'],['火山','かざん','volcano']]},
+{k:'水',on:'スイ',kun:'みず',m:['water'],u:7,un:'Elements',w:[['水','みず','water'],['水曜日','すいようび','Wednesday'],['水泳','すいえい','swimming']]},
+{k:'空',on:'クウ',kun:'そら',m:['sky','empty','air'],u:7,un:'Elements',w:[['空','そら','sky'],['空港','くうこう','airport'],['空気','くうき','air']]},
+{k:'天',on:'テン',kun:'あめ',m:['heaven','sky'],u:7,un:'Elements',w:[['天気','てんき','weather'],['天国','てんごく','heaven'],['天才','てんさい','genius']]},
+{k:'気',on:'キ・ケ',kun:'',m:['spirit','energy','feeling','air'],u:7,un:'Elements',w:[['天気','てんき','weather'],['気持ち','きもち','feeling'],['電気','でんき','electricity']]},
+{k:'雨',on:'ウ',kun:'あめ',m:['rain'],u:7,un:'Elements',w:[['雨','あめ','rain'],['大雨','おおあめ','heavy rain']]},
+{k:'雪',on:'セツ',kun:'ゆき',m:['snow'],u:7,un:'Elements',w:[['雪','ゆき','snow'],['大雪','おおゆき','heavy snow']]},
+{k:'風',on:'フウ',kun:'かぜ',m:['wind','style'],u:7,un:'Elements',w:[['風','かぜ','wind'],['台風','たいふう','typhoon'],['風景','ふうけい','scenery']]},
+// Unit 8 — Directions
+{k:'上',on:'ジョウ',kun:'うえ・あ(がる)',m:['up','above','rise'],u:8,un:'Directions',w:[['上','うえ','above'],['上手','じょうず','skillful'],['上がる','あがる','to go up']]},
+{k:'下',on:'カ・ゲ',kun:'した・さ(がる)',m:['down','below','lower'],u:8,un:'Directions',w:[['下','した','below'],['下手','へた','unskillful'],['下がる','さがる','to go down']]},
+{k:'中',on:'チュウ',kun:'なか',m:['middle','inside','center'],u:8,un:'Directions',w:[['中','なか','inside'],['中国','ちゅうごく','China'],['中学校','ちゅうがっこう','middle school']]},
+{k:'右',on:'ウ',kun:'みぎ',m:['right'],u:8,un:'Directions',w:[['右','みぎ','right'],['右手','みぎて','right hand'],['右折','うせつ','turn right']]},
+{k:'左',on:'サ',kun:'ひだり',m:['left'],u:8,un:'Directions',w:[['左','ひだり','left'],['左手','ひだりて','left hand'],['左折','させつ','turn left']]},
+{k:'北',on:'ホク',kun:'きた',m:['north'],u:8,un:'Directions',w:[['北','きた','north'],['北海道','ほっかいどう','Hokkaido'],['北口','きたぐち','north exit']]},
+{k:'南',on:'ナン',kun:'みなみ',m:['south'],u:8,un:'Directions',w:[['南','みなみ','south'],['南口','みなみぐち','south exit']]},
+{k:'東',on:'トウ',kun:'ひがし',m:['east'],u:8,un:'Directions',w:[['東','ひがし','east'],['東京','とうきょう','Tokyo'],['東口','ひがしぐち','east exit']]},
+{k:'西',on:'セイ',kun:'にし',m:['west'],u:8,un:'Directions',w:[['西','にし','west'],['西口','にしぐち','west exit'],['関西','かんさい','Kansai']]},
+{k:'内',on:'ナイ',kun:'うち',m:['inside','within'],u:8,un:'Directions',w:[['内','うち','inside'],['国内','こくない','domestic'],['案内','あんない','guide']]},
+{k:'外',on:'ガイ',kun:'そと',m:['outside','foreign'],u:8,un:'Directions',w:[['外','そと','outside'],['海外','かいがい','overseas'],['外国','がいこく','foreign country']]},
+// Unit 9 — People & Family
+{k:'人',on:'ジン・ニン',kun:'ひと',m:['person','people'],u:9,un:'People',w:[['人','ひと','person'],['日本人','にほんじん','Japanese person'],['外国人','がいこくじん','foreigner']]},
+{k:'男',on:'ダン',kun:'おとこ',m:['man','male'],u:9,un:'People',w:[['男','おとこ','man'],['男の子','おとこのこ','boy'],['男性','だんせい','male']]},
+{k:'女',on:'ジョ',kun:'おんな',m:['woman','female'],u:9,un:'People',w:[['女','おんな','woman'],['女の子','おんなのこ','girl'],['女性','じょせい','female']]},
+{k:'子',on:'シ・ス',kun:'こ',m:['child','small'],u:9,un:'People',w:[['子供','こども','child'],['男の子','おとこのこ','boy'],['女の子','おんなのこ','girl']]},
+{k:'父',on:'フ',kun:'ちち',m:['father'],u:9,un:'People',w:[['父','ちち','my father'],['お父さん','おとうさん','father'],['父親','ちちおや','father']]},
+{k:'母',on:'ボ',kun:'はは',m:['mother'],u:9,un:'People',w:[['母','はは','my mother'],['お母さん','おかあさん','mother'],['母国','ぼこく','homeland']]},
+{k:'兄',on:'ケイ',kun:'あに',m:['older brother'],u:9,un:'People',w:[['兄','あに','my older brother'],['お兄さん','おにいさん','older brother'],['兄弟','きょうだい','siblings']]},
+{k:'弟',on:'テイ',kun:'おとうと',m:['younger brother'],u:9,un:'People',w:[['弟','おとうと','my younger brother'],['兄弟','きょうだい','siblings']]},
+{k:'姉',on:'シ',kun:'あね',m:['older sister'],u:9,un:'People',w:[['姉','あね','my older sister'],['お姉さん','おねえさん','older sister'],['姉妹','しまい','sisters']]},
+{k:'妹',on:'マイ',kun:'いもうと',m:['younger sister'],u:9,un:'People',w:[['妹','いもうと','my younger sister'],['姉妹','しまい','sisters']]},
+{k:'家',on:'カ・ケ',kun:'いえ・うち',m:['house','home','family'],u:9,un:'People',w:[['家','いえ','house'],['家族','かぞく','family'],['家庭','かてい','household']]},
+{k:'族',on:'ゾク',kun:'',m:['family','tribe','clan'],u:9,un:'People',w:[['家族','かぞく','family'],['民族','みんぞく','ethnic group']]},
+{k:'友',on:'ユウ',kun:'とも',m:['friend'],u:9,un:'People',w:[['友達','ともだち','friend'],['友人','ゆうじん','friend'],['親友','しんゆう','best friend']]},
+{k:'者',on:'シャ',kun:'もの',m:['person (suffix)'],u:9,un:'People',w:[['学者','がくしゃ','scholar'],['医者','いしゃ','doctor'],['記者','きしゃ','journalist']]},
+// Unit 10 — Body
+{k:'体',on:'タイ',kun:'からだ',m:['body'],u:10,un:'Body',w:[['体','からだ','body'],['体育','たいいく','PE'],['体力','たいりょく','physical strength']]},
+{k:'手',on:'シュ',kun:'て',m:['hand'],u:10,un:'Body',w:[['手','て','hand'],['上手','じょうず','skillful'],['手紙','てがみ','letter']]},
+{k:'足',on:'ソク',kun:'あし',m:['foot','leg','enough'],u:10,un:'Body',w:[['足','あし','foot / leg'],['不足','ふそく','shortage'],['足りる','たりる','to be enough']]},
+{k:'目',on:'モク',kun:'め',m:['eye'],u:10,un:'Body',w:[['目','め','eye'],['目的','もくてき','purpose'],['注目','ちゅうもく','attention']]},
+{k:'口',on:'コウ・ク',kun:'くち',m:['mouth'],u:10,un:'Body',w:[['口','くち','mouth'],['入口','いりぐち','entrance'],['出口','でぐち','exit']]},
+{k:'耳',on:'ジ',kun:'みみ',m:['ear'],u:10,un:'Body',w:[['耳','みみ','ear'],['耳鼻科','じびか','ENT department']]},
+{k:'頭',on:'トウ',kun:'あたま',m:['head'],u:10,un:'Body',w:[['頭','あたま','head'],['頭痛','ずつう','headache'],['先頭','せんとう','lead/front']]},
+{k:'顔',on:'ガン',kun:'かお',m:['face'],u:10,un:'Body',w:[['顔','かお','face'],['顔色','かおいろ','complexion'],['笑顔','えがお','smile']]},
+{k:'心',on:'シン',kun:'こころ',m:['heart','mind'],u:10,un:'Body',w:[['心','こころ','heart / mind'],['心配','しんぱい','worry'],['安心','あんしん','relief']]},
+{k:'血',on:'ケツ',kun:'ち',m:['blood'],u:10,un:'Body',w:[['血','ち','blood'],['血液','けつえき','blood'],['出血','しゅっけつ','bleeding']]},
+{k:'骨',on:'コツ',kun:'ほね',m:['bone'],u:10,un:'Body',w:[['骨','ほね','bone'],['骨折','こっせつ','fracture']]},
+{k:'指',on:'シ',kun:'ゆび',m:['finger','point'],u:10,un:'Body',w:[['指','ゆび','finger'],['指す','さす','to point'],['指示','しじ','instruction']]},
+{k:'背',on:'ハイ',kun:'せ',m:['back','height'],u:10,un:'Body',w:[['背','せ','height'],['背中','せなか','back']]},
+{k:'腰',on:'ヨウ',kun:'こし',m:['waist','hip'],u:10,un:'Body',w:[['腰','こし','waist'],['腰痛','ようつう','backache']]},
+{k:'胸',on:'キョウ',kun:'むね',m:['chest','breast'],u:10,un:'Body',w:[['胸','むね','chest'],['胸痛','きょうつう','chest pain']]},
+{k:'鼻',on:'ビ',kun:'はな',m:['nose'],u:10,un:'Body',w:[['鼻','はな','nose'],['鼻水','はなみず','runny nose']]},
+{k:'歯',on:'シ',kun:'は',m:['tooth'],u:10,un:'Body',w:[['歯','は','tooth'],['歯医者','はいしゃ','dentist'],['虫歯','むしば','cavity']]},
+{k:'髪',on:'ハツ',kun:'かみ',m:['hair (on head)'],u:10,un:'Body',w:[['髪','かみ','hair'],['髪型','かみがた','hairstyle']]},
+// Unit 11 — School & Study
+{k:'学',on:'ガク',kun:'まな(ぶ)',m:['study','learn','school'],u:11,un:'School',w:[['学校','がっこう','school'],['学生','がくせい','student'],['学ぶ','まなぶ','to learn']]},
+{k:'校',on:'コウ',kun:'',m:['school'],u:11,un:'School',w:[['学校','がっこう','school'],['高校','こうこう','high school'],['小学校','しょうがっこう','elementary school']]},
+{k:'生',on:'セイ・ショウ',kun:'い(きる)',m:['life','live','birth','student'],u:11,un:'School',w:[['学生','がくせい','student'],['先生','せんせい','teacher'],['生活','せいかつ','daily life']]},
+{k:'教',on:'キョウ',kun:'おし(える)',m:['teach','educate'],u:11,un:'School',w:[['教える','おしえる','to teach'],['教室','きょうしつ','classroom'],['教科書','きょうかしょ','textbook']]},
+{k:'習',on:'シュウ',kun:'なら(う)',m:['learn','practice','habit'],u:11,un:'School',w:[['習う','ならう','to learn'],['練習','れんしゅう','practice'],['自習','じしゅう','self-study']]},
+{k:'読',on:'ドク',kun:'よ(む)',m:['read'],u:11,un:'School',w:[['読む','よむ','to read'],['読書','どくしょ','reading books'],['読者','どくしゃ','reader']]},
+{k:'書',on:'ショ',kun:'か(く)',m:['write'],u:11,un:'School',w:[['書く','かく','to write'],['読書','どくしょ','reading'],['書類','しょるい','documents']]},
+{k:'話',on:'ワ',kun:'はな(す)',m:['speak','talk','story'],u:11,un:'School',w:[['話す','はなす','to speak'],['電話','でんわ','telephone'],['会話','かいわ','conversation']]},
+{k:'聞',on:'ブン',kun:'き(く)',m:['listen','hear','ask'],u:11,un:'School',w:[['聞く','きく','to listen'],['新聞','しんぶん','newspaper'],['聞こえる','きこえる','to be audible']]},
+{k:'語',on:'ゴ',kun:'かた(る)',m:['language','word','speak'],u:11,un:'School',w:[['日本語','にほんご','Japanese'],['英語','えいご','English'],['語学','ごがく','language study']]},
+{k:'字',on:'ジ',kun:'あざ',m:['character','letter'],u:11,un:'School',w:[['漢字','かんじ','kanji'],['文字','もじ','character'],['数字','すうじ','numeral']]},
+{k:'文',on:'ブン',kun:'ふみ',m:['sentence','writing','literature'],u:11,un:'School',w:[['文章','ぶんしょう','text'],['文学','ぶんがく','literature'],['作文','さくぶん','composition']]},
+{k:'問',on:'モン',kun:'と(う)',m:['question','ask','problem'],u:11,un:'School',w:[['問題','もんだい','problem'],['質問','しつもん','question']]},
+{k:'答',on:'トウ',kun:'こた(える)',m:['answer','reply'],u:11,un:'School',w:[['答える','こたえる','to answer'],['答え','こたえ','answer'],['解答','かいとう','solution']]},
+{k:'試',on:'シ',kun:'こころ(みる)',m:['try','test'],u:11,un:'School',w:[['試験','しけん','exam'],['試合','しあい','game/match'],['試す','ためす','to try']]},
+{k:'験',on:'ケン',kun:'',m:['test','experience'],u:11,un:'School',w:[['試験','しけん','exam'],['経験','けいけん','experience'],['実験','じっけん','experiment']]},
+{k:'点',on:'テン',kun:'',m:['point','dot','grade','score'],u:11,un:'School',w:[['点数','てんすう','score'],['満点','まんてん','perfect score'],['問題点','もんだいてん','problem point']]},
+{k:'勉',on:'ベン',kun:'',m:['study hard','diligence'],u:11,un:'School',w:[['勉強','べんきょう','study'],['勉強する','べんきょうする','to study']]},
+{k:'努',on:'ド',kun:'つと(める)',m:['effort','strive'],u:11,un:'School',w:[['努力','どりょく','effort'],['努める','つとめる','to strive']]},
+// Unit 12 — Adjectives
+{k:'大',on:'ダイ・タイ',kun:'おお(きい)',m:['big','large','great'],u:12,un:'Adjectives',w:[['大きい','おおきい','big'],['大学','だいがく','university'],['大切','たいせつ','important']]},
+{k:'小',on:'ショウ',kun:'ちい(さい)',m:['small','little'],u:12,un:'Adjectives',w:[['小さい','ちいさい','small'],['小学校','しょうがっこう','elementary school'],['小説','しょうせつ','novel']]},
+{k:'高',on:'コウ',kun:'たか(い)',m:['high','tall','expensive'],u:12,un:'Adjectives',w:[['高い','たかい','expensive / tall'],['高校','こうこう','high school'],['最高','さいこう','best']]},
+{k:'低',on:'テイ',kun:'ひく(い)',m:['low','short'],u:12,un:'Adjectives',w:[['低い','ひくい','low'],['最低','さいてい','worst / lowest']]},
+{k:'長',on:'チョウ',kun:'なが(い)',m:['long','leader','chief'],u:12,un:'Adjectives',w:[['長い','ながい','long'],['社長','しゃちょう','company president'],['長所','ちょうしょ','strong point']]},
+{k:'短',on:'タン',kun:'みじか(い)',m:['short','brief'],u:12,un:'Adjectives',w:[['短い','みじかい','short'],['短所','たんしょ','weak point']]},
+{k:'広',on:'コウ',kun:'ひろ(い)',m:['wide','broad','spacious'],u:12,un:'Adjectives',w:[['広い','ひろい','wide'],['広場','ひろば','plaza'],['広告','こうこく','advertisement']]},
+{k:'狭',on:'キョウ',kun:'せま(い)',m:['narrow','confined'],u:12,un:'Adjectives',w:[['狭い','せまい','narrow']]},
+{k:'多',on:'タ',kun:'おお(い)',m:['many','much'],u:12,un:'Adjectives',w:[['多い','おおい','many'],['多分','たぶん','probably'],['多数','たすう','majority']]},
+{k:'少',on:'ショウ',kun:'すく(ない)・すこ(し)',m:['few','little'],u:12,un:'Adjectives',w:[['少ない','すくない','few'],['少し','すこし','a little'],['少年','しょうねん','boy']]},
+{k:'新',on:'シン',kun:'あたら(しい)',m:['new'],u:12,un:'Adjectives',w:[['新しい','あたらしい','new'],['新聞','しんぶん','newspaper'],['新幹線','しんかんせん','bullet train']]},
+{k:'古',on:'コ',kun:'ふる(い)',m:['old'],u:12,un:'Adjectives',w:[['古い','ふるい','old'],['古典','こてん','classic']]},
+{k:'若',on:'ジャク',kun:'わか(い)',m:['young'],u:12,un:'Adjectives',w:[['若い','わかい','young'],['若者','わかもの','young person']]},
+{k:'重',on:'ジュウ・チョウ',kun:'おも(い)',m:['heavy','important'],u:12,un:'Adjectives',w:[['重い','おもい','heavy'],['重要','じゅうよう','important'],['体重','たいじゅう','body weight']]},
+{k:'軽',on:'ケイ',kun:'かる(い)',m:['light','easy','casual'],u:12,un:'Adjectives',w:[['軽い','かるい','light'],['気軽','きがる','easygoing']]},
+{k:'太',on:'タイ',kun:'ふと(い)',m:['fat','thick'],u:12,un:'Adjectives',w:[['太い','ふとい','thick'],['太陽','たいよう','sun'],['太平洋','たいへいよう','Pacific Ocean']]},
+{k:'細',on:'サイ',kun:'ほそ(い)',m:['thin','fine','detailed'],u:12,un:'Adjectives',w:[['細い','ほそい','thin'],['細かい','こまかい','detailed']]},
+{k:'速',on:'ソク',kun:'はや(い)',m:['fast','quick'],u:12,un:'Adjectives',w:[['速い','はやい','fast'],['速度','そくど','speed'],['高速','こうそく','high speed']]},
+{k:'遅',on:'チ',kun:'おそ(い)',m:['slow','late'],u:12,un:'Adjectives',w:[['遅い','おそい','slow / late'],['遅刻','ちこく','being late']]},
+{k:'強',on:'キョウ',kun:'つよ(い)',m:['strong'],u:12,un:'Adjectives',w:[['強い','つよい','strong'],['勉強','べんきょう','study'],['強調','きょうちょう','emphasis']]},
+{k:'弱',on:'ジャク',kun:'よわ(い)',m:['weak'],u:12,un:'Adjectives',w:[['弱い','よわい','weak'],['弱点','じゃくてん','weak point']]},
+// Unit 13 — Colors
+{k:'白',on:'ハク・ビャク',kun:'しろ',m:['white'],u:13,un:'Colors',w:[['白い','しろい','white'],['白紙','はくし','blank paper'],['白黒','しろくろ','black & white']]},
+{k:'黒',on:'コク',kun:'くろ',m:['black'],u:13,un:'Colors',w:[['黒い','くろい','black'],['黒板','こくばん','blackboard']]},
+{k:'赤',on:'セキ',kun:'あか',m:['red'],u:13,un:'Colors',w:[['赤い','あかい','red'],['赤ちゃん','あかちゃん','baby'],['赤字','あかじ','deficit']]},
+{k:'青',on:'セイ',kun:'あお',m:['blue','green (traffic)'],u:13,un:'Colors',w:[['青い','あおい','blue'],['青空','あおぞら','blue sky'],['青春','せいしゅん','youth']]},
+{k:'黄',on:'コウ',kun:'き',m:['yellow'],u:13,un:'Colors',w:[['黄色','きいろ','yellow'],['黄金','おうごん','gold']]},
+{k:'茶',on:'チャ',kun:'',m:['tea','brown'],u:13,un:'Colors',w:[['茶色','ちゃいろ','brown'],['お茶','おちゃ','tea'],['茶道','さどう','tea ceremony']]},
+{k:'色',on:'ショク・シキ',kun:'いろ',m:['color'],u:13,un:'Colors',w:[['色','いろ','color'],['色々','いろいろ','various'],['特色','とくしょく','special feature']]},
+// Unit 14 — Animals
+{k:'犬',on:'ケン',kun:'いぬ',m:['dog'],u:14,un:'Animals',w:[['犬','いぬ','dog'],['子犬','こいぬ','puppy'],['番犬','ばんけん','guard dog']]},
+{k:'猫',on:'ビョウ',kun:'ねこ',m:['cat'],u:14,un:'Animals',w:[['猫','ねこ','cat'],['子猫','こねこ','kitten']]},
+{k:'魚',on:'ギョ',kun:'さかな',m:['fish'],u:14,un:'Animals',w:[['魚','さかな','fish'],['金魚','きんぎょ','goldfish']]},
+{k:'鳥',on:'チョウ',kun:'とり',m:['bird'],u:14,un:'Animals',w:[['鳥','とり','bird'],['野鳥','やちょう','wild bird'],['小鳥','ことり','small bird']]},
+{k:'馬',on:'バ',kun:'うま',m:['horse'],u:14,un:'Animals',w:[['馬','うま','horse'],['競馬','けいば','horse racing']]},
+{k:'牛',on:'ギュウ',kun:'うし',m:['cow','cattle'],u:14,un:'Animals',w:[['牛','うし','cow'],['牛肉','ぎゅうにく','beef'],['牛乳','ぎゅうにゅう','milk']]},
+{k:'豚',on:'トン',kun:'ぶた',m:['pig'],u:14,un:'Animals',w:[['豚','ぶた','pig'],['豚肉','ぶたにく','pork'],['豚カツ','とんかつ','pork cutlet']]},
+{k:'虫',on:'チュウ',kun:'むし',m:['insect','bug'],u:14,un:'Animals',w:[['虫','むし','insect'],['害虫','がいちゅう','pest'],['虫歯','むしば','cavity']]},
+{k:'鶏',on:'ケイ',kun:'にわとり',m:['chicken'],u:14,un:'Animals',w:[['鶏','にわとり','chicken'],['鶏肉','とりにく','chicken (meat)']]},
+// Unit 15 — Food & Drink
+{k:'食',on:'ショク',kun:'た(べる)',m:['eat','food'],u:15,un:'Food',w:[['食べる','たべる','to eat'],['食事','しょくじ','meal'],['食堂','しょくどう','cafeteria']]},
+{k:'飲',on:'イン',kun:'の(む)',m:['drink'],u:15,un:'Food',w:[['飲む','のむ','to drink'],['飲み物','のみもの','drink'],['飲食','いんしょく','food and drink']]},
+{k:'米',on:'ベイ・マイ',kun:'こめ',m:['rice (uncooked)','America'],u:15,un:'Food',w:[['米','こめ','uncooked rice'],['米国','べいこく','USA']]},
+{k:'麦',on:'バク',kun:'むぎ',m:['wheat','barley'],u:15,un:'Food',w:[['小麦','こむぎ','wheat'],['麦茶','むぎちゃ','barley tea']]},
+{k:'肉',on:'ニク',kun:'',m:['meat','flesh'],u:15,un:'Food',w:[['肉','にく','meat'],['牛肉','ぎゅうにく','beef'],['肉体','にくたい','flesh / body']]},
+{k:'菜',on:'サイ',kun:'な',m:['vegetable','greens'],u:15,un:'Food',w:[['野菜','やさい','vegetables'],['菜食','さいしょく','vegetarian diet']]},
+{k:'果',on:'カ',kun:'は(たす)',m:['fruit','result'],u:15,un:'Food',w:[['果物','くだもの','fruit'],['結果','けっか','result'],['果汁','かじゅう','juice']]},
+{k:'物',on:'ブツ・モツ',kun:'もの',m:['thing','object'],u:15,un:'Food',w:[['物','もの','thing'],['買い物','かいもの','shopping'],['食べ物','たべもの','food']]},
+{k:'卵',on:'ラン',kun:'たまご',m:['egg'],u:15,un:'Food',w:[['卵','たまご','egg'],['卵焼き','たまごやき','Japanese omelette']]},
+{k:'酒',on:'シュ',kun:'さけ',m:['alcohol','sake'],u:15,un:'Food',w:[['お酒','おさけ','alcohol / sake'],['日本酒','にほんしゅ','sake'],['禁酒','きんしゅ','abstaining from alcohol']]},
+{k:'飯',on:'ハン',kun:'めし',m:['meal','cooked rice'],u:15,un:'Food',w:[['ご飯','ごはん','meal / rice'],['朝ご飯','あさごはん','breakfast'],['夕飯','ゆうはん','dinner']]},
+// Unit 16 — Shopping & Clothes
+{k:'服',on:'フク',kun:'',m:['clothes','clothing'],u:16,un:'Shopping',w:[['服','ふく','clothes'],['洋服','ようふく','Western clothing'],['制服','せいふく','uniform']]},
+{k:'着',on:'チャク',kun:'き(る)',m:['wear','arrive'],u:16,un:'Shopping',w:[['着る','きる','to wear'],['着く','つく','to arrive'],['着物','きもの','kimono']]},
+{k:'買',on:'バイ',kun:'か(う)',m:['buy'],u:16,un:'Shopping',w:[['買う','かう','to buy'],['買い物','かいもの','shopping']]},
+{k:'売',on:'バイ',kun:'う(る)',m:['sell'],u:16,un:'Shopping',w:[['売る','うる','to sell'],['売り場','うりば','sales floor'],['販売','はんばい','sales']]},
+{k:'店',on:'テン',kun:'みせ',m:['store','shop'],u:16,un:'Shopping',w:[['店','みせ','store'],['店員','てんいん','store clerk'],['本屋','ほんや','bookstore']]},
+{k:'品',on:'ヒン',kun:'しな',m:['goods','article','quality'],u:16,un:'Shopping',w:[['品物','しなもの','goods'],['食品','しょくひん','food products'],['品質','ひんしつ','quality']]},
+{k:'円',on:'エン',kun:'まる(い)',m:['yen','circle','round'],u:16,un:'Shopping',w:[['円','えん','yen'],['百円','ひゃくえん','100 yen'],['円形','えんけい','circular']]},
+{k:'安',on:'アン',kun:'やす(い)',m:['cheap','peaceful','safe'],u:16,un:'Shopping',w:[['安い','やすい','cheap'],['安全','あんぜん','safe'],['不安','ふあん','anxiety']]},
+{k:'市',on:'シ',kun:'いち',m:['city','market'],u:16,un:'Shopping',w:[['市場','いちば','market'],['市役所','しやくしょ','city hall'],['都市','とし','city']]},
+{k:'場',on:'ジョウ・バ',kun:'ば',m:['place','location'],u:16,un:'Shopping',w:[['場所','ばしょ','place'],['工場','こうじょう','factory'],['場合','ばあい','case / situation']]},
+// Unit 17 — Transport
+{k:'車',on:'シャ',kun:'くるま',m:['car','vehicle'],u:17,un:'Transport',w:[['車','くるま','car'],['電車','でんしゃ','train'],['自動車','じどうしゃ','automobile']]},
+{k:'電',on:'デン',kun:'',m:['electricity','electric'],u:17,un:'Transport',w:[['電車','でんしゃ','train'],['電話','でんわ','telephone'],['電気','でんき','electricity']]},
+{k:'駅',on:'エキ',kun:'',m:['station'],u:17,un:'Transport',w:[['駅','えき','station'],['駅前','えきまえ','in front of station'],['終点','しゅうてん','last stop']]},
+{k:'道',on:'ドウ',kun:'みち',m:['road','way','path'],u:17,un:'Transport',w:[['道','みち','road'],['道路','どうろ','road'],['北海道','ほっかいどう','Hokkaido']]},
+{k:'行',on:'コウ・ギョウ',kun:'い(く)',m:['go','conduct'],u:17,un:'Transport',w:[['行く','いく','to go'],['銀行','ぎんこう','bank'],['旅行','りょこう','travel']]},
+{k:'乗',on:'ジョウ',kun:'の(る)',m:['ride','board'],u:17,un:'Transport',w:[['乗る','のる','to ride'],['乗り換え','のりかえ','transfer'],['乗客','じょうきゃく','passenger']]},
+{k:'降',on:'コウ',kun:'お(りる)',m:['get off','descend','fall (rain/snow)'],u:17,un:'Transport',w:[['降りる','おりる','to get off'],['降る','ふる','to fall (rain/snow)']]},
+{k:'飛',on:'ヒ',kun:'と(ぶ)',m:['fly','jump'],u:17,un:'Transport',w:[['飛ぶ','とぶ','to fly'],['飛行機','ひこうき','airplane']]},
+{k:'船',on:'セン',kun:'ふね',m:['ship','boat'],u:17,un:'Transport',w:[['船','ふね','ship'],['船旅','ふなたび','sea voyage']]},
+{k:'港',on:'コウ',kun:'みなと',m:['harbor','port'],u:17,un:'Transport',w:[['港','みなと','port'],['空港','くうこう','airport'],['神戸港','こうべこう','Port of Kobe']]},
+// Unit 18 — City
+{k:'町',on:'チョウ',kun:'まち',m:['town','block'],u:18,un:'City',w:[['町','まち','town'],['下町','したまち','old downtown']]},
+{k:'村',on:'ソン',kun:'むら',m:['village'],u:18,un:'City',w:[['村','むら','village'],['農村','のうそん','farming village']]},
+{k:'都',on:'ト・ツ',kun:'みやこ',m:['capital','metropolis'],u:18,un:'City',w:[['東京都','とうきょうと','Tokyo Metropolis'],['都市','とし','city'],['都心','としん','city center']]},
+{k:'府',on:'フ',kun:'',m:['urban prefecture','government'],u:18,un:'City',w:[['大阪府','おおさかふ','Osaka Prefecture'],['政府','せいふ','government']]},
+{k:'県',on:'ケン',kun:'',m:['prefecture'],u:18,un:'City',w:[['兵庫県','ひょうごけん','Hyogo Prefecture'],['県庁','けんちょう','prefectural office']]},
+{k:'国',on:'コク',kun:'くに',m:['country','nation'],u:18,un:'City',w:[['国','くに','country'],['外国','がいこく','foreign country'],['中国','ちゅうごく','China']]},
+{k:'部',on:'ブ',kun:'',m:['part','section','department'],u:18,un:'City',w:[['部屋','へや','room'],['全部','ぜんぶ','all'],['部分','ぶぶん','part']]},
+{k:'室',on:'シツ',kun:'',m:['room'],u:18,un:'City',w:[['教室','きょうしつ','classroom'],['和室','わしつ','Japanese room']]},
+{k:'門',on:'モン',kun:'かど',m:['gate'],u:18,un:'City',w:[['門','もん','gate'],['専門','せんもん','specialty']]},
+{k:'橋',on:'キョウ',kun:'はし',m:['bridge'],u:18,un:'City',w:[['橋','はし','bridge'],['石橋','いしばし','stone bridge']]},
+// Unit 19 — Work & Society
+{k:'仕',on:'シ',kun:'つか(える)',m:['serve','work'],u:19,un:'Work',w:[['仕事','しごと','work / job'],['仕方','しかた','way / method']]},
+{k:'事',on:'ジ',kun:'こと',m:['matter','fact','work'],u:19,un:'Work',w:[['仕事','しごと','work'],['事件','じけん','incident'],['大事','だいじ','important']]},
+{k:'会',on:'カイ',kun:'あ(う)',m:['meet','meeting','society'],u:19,un:'Work',w:[['会社','かいしゃ','company'],['会議','かいぎ','meeting'],['会う','あう','to meet']]},
+{k:'社',on:'シャ',kun:'やしろ',m:['company','society','shrine'],u:19,un:'Work',w:[['会社','かいしゃ','company'],['社員','しゃいん','employee'],['社会','しゃかい','society']]},
+{k:'員',on:'イン',kun:'',m:['member','staff'],u:19,un:'Work',w:[['社員','しゃいん','employee'],['店員','てんいん','store clerk'],['全員','ぜんいん','everyone']]},
+{k:'働',on:'ドウ',kun:'はたら(く)',m:['work','labor'],u:19,un:'Work',w:[['働く','はたらく','to work'],['労働','ろうどう','labor']]},
+{k:'産',on:'サン',kun:'う(む)',m:['produce','birth','property'],u:19,un:'Work',w:[['生産','せいさん','production'],['産業','さんぎょう','industry'],['財産','ざいさん','property']]},
+{k:'業',on:'ギョウ',kun:'わざ',m:['business','industry','work'],u:19,un:'Work',w:[['産業','さんぎょう','industry'],['授業','じゅぎょう','class'],['農業','のうぎょう','agriculture']]},
+{k:'課',on:'カ',kun:'',m:['lesson','section','department'],u:19,un:'Work',w:[['課題','かだい','assignment'],['課長','かちょう','section chief']]},
+{k:'給',on:'キュウ',kun:'',m:['salary','supply'],u:19,un:'Work',w:[['給料','きゅうりょう','salary'],['給食','きゅうしょく','school lunch']]},
+// Unit 20 — Plants
+{k:'花',on:'カ',kun:'はな',m:['flower'],u:20,un:'Plants',w:[['花','はな','flower'],['花見','はなみ','cherry blossom viewing'],['花火','はなび','fireworks']]},
+{k:'草',on:'ソウ',kun:'くさ',m:['grass','weed'],u:20,un:'Plants',w:[['草','くさ','grass'],['雑草','ざっそう','weed']]},
+{k:'木',on:'モク・ボク',kun:'き',m:['tree','wood'],u:20,un:'Plants',w:[['木','き','tree'],['木曜日','もくようび','Thursday'],['木材','もくざい','lumber']]},
+{k:'竹',on:'チク',kun:'たけ',m:['bamboo'],u:20,un:'Plants',w:[['竹','たけ','bamboo'],['竹林','ちくりん','bamboo grove']]},
+{k:'葉',on:'ヨウ',kun:'は',m:['leaf'],u:20,un:'Plants',w:[['葉','は','leaf'],['紅葉','もみじ','autumn leaves'],['言葉','ことば','word / language']]},
+{k:'根',on:'コン',kun:'ね',m:['root'],u:20,un:'Plants',w:[['根','ね','root'],['大根','だいこん','daikon radish']]},
+{k:'実',on:'ジツ',kun:'み',m:['fruit','truth','real'],u:20,un:'Plants',w:[['実','み','fruit'],['実は','じつは','actually'],['現実','げんじつ','reality']]},
+{k:'種',on:'シュ',kun:'たね',m:['seed','kind','type'],u:20,un:'Plants',w:[['種','たね','seed'],['種類','しゅるい','type / kind']]},
+// Unit 21 — Verbs (perception)
+{k:'見',on:'ケン',kun:'み(る)',m:['see','look','watch'],u:21,un:'Verbs',w:[['見る','みる','to see / watch'],['見える','みえる','to be visible'],['見学','けんがく','field trip']]},
+{k:'言',on:'ゲン',kun:'い(う)',m:['say','speak'],u:21,un:'Verbs',w:[['言う','いう','to say'],['言葉','ことば','word'],['名言','めいげん','famous saying']]},
+{k:'思',on:'シ',kun:'おも(う)',m:['think','believe'],u:21,un:'Verbs',w:[['思う','おもう','to think'],['思い出','おもいで','memory'],['意思','いし','intention']]},
+{k:'考',on:'コウ',kun:'かんが(える)',m:['think','consider'],u:21,un:'Verbs',w:[['考える','かんがえる','to think'],['考え方','かんがえかた','way of thinking'],['参考','さんこう','reference']]},
+{k:'知',on:'チ',kun:'し(る)',m:['know','knowledge'],u:21,un:'Verbs',w:[['知る','しる','to know'],['知識','ちしき','knowledge'],['通知','つうち','notification']]},
+{k:'使',on:'シ',kun:'つか(う)',m:['use'],u:21,un:'Verbs',w:[['使う','つかう','to use'],['使い方','つかいかた','how to use']]},
+{k:'作',on:'サク',kun:'つく(る)',m:['make','create'],u:21,un:'Verbs',w:[['作る','つくる','to make'],['作品','さくひん','work / piece'],['作者','さくしゃ','author']]},
+{k:'持',on:'ジ',kun:'も(つ)',m:['have','hold','carry'],u:21,un:'Verbs',w:[['持つ','もつ','to hold / have'],['気持ち','きもち','feeling']]},
+{k:'入',on:'ニュウ',kun:'い(る)・は(いる)',m:['enter','put in'],u:21,un:'Verbs',w:[['入る','はいる','to enter'],['入口','いりぐち','entrance'],['入学','にゅうがく','enrollment']]},
+{k:'出',on:'シュツ',kun:'で(る)',m:['exit','go out','produce'],u:21,un:'Verbs',w:[['出る','でる','to go out'],['出口','でぐち','exit'],['出発','しゅっぱつ','departure']]},
+{k:'開',on:'カイ',kun:'あ(ける)',m:['open'],u:21,un:'Verbs',w:[['開ける','あける','to open'],['開始','かいし','start'],['公開','こうかい','public release']]},
+{k:'閉',on:'ヘイ',kun:'し(める)',m:['close','shut'],u:21,un:'Verbs',w:[['閉める','しめる','to close'],['閉店','へいてん','shop closing']]},
+{k:'始',on:'シ',kun:'はじ(める)',m:['begin','start'],u:21,un:'Verbs',w:[['始める','はじめる','to start'],['開始','かいし','start']]},
+{k:'終',on:'シュウ',kun:'お(わる)',m:['end','finish'],u:21,un:'Verbs',w:[['終わる','おわる','to end'],['終了','しゅうりょう','completion'],['最終','さいしゅう','final']]},
+{k:'止',on:'シ',kun:'と(まる)',m:['stop'],u:21,un:'Verbs',w:[['止まる','とまる','to stop'],['禁止','きんし','prohibited'],['中止','ちゅうし','cancellation']]},
+{k:'動',on:'ドウ',kun:'うご(く)',m:['move','motion'],u:21,un:'Verbs',w:[['動く','うごく','to move'],['運動','うんどう','exercise'],['自動車','じどうしゃ','automobile']]},
+// Unit 22 — Movement
+{k:'立',on:'リツ',kun:'た(つ)',m:['stand'],u:22,un:'Movement',w:[['立つ','たつ','to stand'],['立場','たちば','standpoint'],['設立','せつりつ','establishment']]},
+{k:'起',on:'キ',kun:'お(きる)',m:['wake up','rise','happen'],u:22,un:'Movement',w:[['起きる','おきる','to wake up'],['起こる','おこる','to happen']]},
+{k:'寝',on:'シン',kun:'ね(る)',m:['sleep','lie down'],u:22,un:'Movement',w:[['寝る','ねる','to sleep'],['寝室','しんしつ','bedroom']]},
+{k:'走',on:'ソウ',kun:'はし(る)',m:['run'],u:22,un:'Movement',w:[['走る','はしる','to run'],['競走','きょうそう','race']]},
+{k:'歩',on:'ホ',kun:'ある(く)',m:['walk','step'],u:22,un:'Movement',w:[['歩く','あるく','to walk'],['散歩','さんぽ','walk / stroll'],['歩道','ほどう','sidewalk']]},
+{k:'泳',on:'エイ',kun:'およ(ぐ)',m:['swim'],u:22,un:'Movement',w:[['泳ぐ','およぐ','to swim'],['水泳','すいえい','swimming']]},
+{k:'帰',on:'キ',kun:'かえ(る)',m:['return','go home'],u:22,un:'Movement',w:[['帰る','かえる','to return home'],['帰国','きこく','return to home country']]},
+{k:'住',on:'ジュウ',kun:'す(む)',m:['live','reside'],u:22,un:'Movement',w:[['住む','すむ','to live'],['住所','じゅうしょ','address'],['住宅','じゅうたく','residence']]},
+{k:'旅',on:'リョ',kun:'たび',m:['travel','journey'],u:22,un:'Movement',w:[['旅行','りょこう','travel'],['旅館','りょかん','Japanese inn']]},
+{k:'遊',on:'ユウ',kun:'あそ(ぶ)',m:['play','recreation'],u:22,un:'Movement',w:[['遊ぶ','あそぶ','to play'],['遊園地','ゆうえんち','amusement park']]},
+{k:'送',on:'ソウ',kun:'おく(る)',m:['send','escort'],u:22,un:'Movement',w:[['送る','おくる','to send'],['放送','ほうそう','broadcast']]},
+{k:'待',on:'タイ',kun:'ま(つ)',m:['wait','expect'],u:22,un:'Movement',w:[['待つ','まつ','to wait'],['期待','きたい','expectation']]},
+{k:'通',on:'ツウ',kun:'とお(る)',m:['pass through','commute'],u:22,un:'Movement',w:[['通る','とおる','to pass'],['交通','こうつう','traffic'],['通勤','つうきん','commuting']]},
+// Unit 23 — Emotions
+{k:'変',on:'ヘン',kun:'か(わる)',m:['change','strange'],u:23,un:'Emotions',w:[['変わる','かわる','to change'],['変化','へんか','change'],['大変','たいへん','terrible / hard']]},
+{k:'困',on:'コン',kun:'こま(る)',m:['be troubled','difficulty'],u:23,un:'Emotions',w:[['困る','こまる','to be troubled'],['困難','こんなん','difficulty']]},
+{k:'喜',on:'キ',kun:'よろこ(ぶ)',m:['rejoice','be happy'],u:23,un:'Emotions',w:[['喜ぶ','よろこぶ','to rejoice'],['喜び','よろこび','joy']]},
+{k:'悲',on:'ヒ',kun:'かな(しい)',m:['sad','grief'],u:23,un:'Emotions',w:[['悲しい','かなしい','sad'],['悲劇','ひげき','tragedy']]},
+{k:'怒',on:'ド',kun:'おこ(る)',m:['angry','anger'],u:23,un:'Emotions',w:[['怒る','おこる','to get angry'],['怒り','いかり','anger']]},
+{k:'愛',on:'アイ',kun:'',m:['love'],u:23,un:'Emotions',w:[['愛','あい','love'],['愛する','あいする','to love'],['愛情','あいじょう','affection']]},
+{k:'好',on:'コウ',kun:'す(き)',m:['like','fond of'],u:23,un:'Emotions',w:[['好き','すき','like'],['好む','このむ','to prefer'],['好意','こうい','goodwill']]},
+{k:'嫌',on:'ケン',kun:'きら(い)',m:['dislike','hate'],u:23,un:'Emotions',w:[['嫌い','きらい','dislike'],['嫌な','いやな','unpleasant']]},
+{k:'楽',on:'ガク・ラク',kun:'たの(しい)',m:['fun','easy','music'],u:23,un:'Emotions',w:[['楽しい','たのしい','fun'],['音楽','おんがく','music'],['楽な','らくな','comfortable']]},
+{k:'苦',on:'ク',kun:'くる(しい)',m:['suffering','bitter','hard'],u:23,un:'Emotions',w:[['苦しい','くるしい','painful'],['苦労','くろう','hardship'],['苦手','にがて','weak point']]},
+// Unit 24 — Health
+{k:'痛',on:'ツウ',kun:'いた(い)',m:['pain','hurt','ache'],u:24,un:'Health',w:[['痛い','いたい','painful'],['頭痛','ずつう','headache'],['腹痛','ふくつう','stomachache']]},
+{k:'病',on:'ビョウ',kun:'やま(い)',m:['illness','disease'],u:24,un:'Health',w:[['病気','びょうき','illness'],['病院','びょういん','hospital']]},
+{k:'医',on:'イ',kun:'',m:['medicine','doctor'],u:24,un:'Health',w:[['医者','いしゃ','doctor'],['医療','いりょう','medical treatment']]},
+{k:'薬',on:'ヤク',kun:'くすり',m:['medicine','drug'],u:24,un:'Health',w:[['薬','くすり','medicine'],['薬局','やっきょく','pharmacy']]},
+{k:'院',on:'イン',kun:'',m:['institution','hospital'],u:24,un:'Health',w:[['病院','びょういん','hospital'],['大学院','だいがくいん','graduate school']]},
+{k:'胃',on:'イ',kun:'',m:['stomach'],u:24,un:'Health',w:[['胃','い','stomach'],['胃痛','いつう','stomachache']]},
+{k:'腸',on:'チョウ',kun:'',m:['intestines','gut'],u:24,un:'Health',w:[['胃腸','いちょう','stomach and intestines']]},
+// Unit 25 — Science & Nature concepts
+{k:'理',on:'リ',kun:'',m:['reason','logic','science'],u:25,un:'Science',w:[['理由','りゆう','reason'],['理科','りか','natural science'],['料理','りょうり','cooking']]},
+{k:'科',on:'カ',kun:'',m:['science','department','course'],u:25,un:'Science',w:[['科学','かがく','science'],['教科書','きょうかしょ','textbook']]},
+{k:'化',on:'カ',kun:'ば(ける)',m:['change','transform','chemistry'],u:25,un:'Science',w:[['変化','へんか','change'],['化学','かがく','chemistry'],['文化','ぶんか','culture']]},
+{k:'力',on:'リョク・リキ',kun:'ちから',m:['power','force','strength'],u:25,un:'Science',w:[['力','ちから','strength'],['努力','どりょく','effort'],['電力','でんりょく','electric power']]},
+{k:'光',on:'コウ',kun:'ひかり',m:['light','ray'],u:25,un:'Science',w:[['光','ひかり','light'],['観光','かんこう','sightseeing']]},
+{k:'熱',on:'ネツ',kun:'あつ(い)',m:['heat','fever'],u:25,un:'Science',w:[['熱','ねつ','fever / heat'],['情熱','じょうねつ','passion'],['熱心','ねっしん','enthusiastic']]},
+{k:'音',on:'オン',kun:'おと',m:['sound','noise'],u:25,un:'Science',w:[['音','おと','sound'],['音楽','おんがく','music'],['発音','はつおん','pronunciation']]},
+// Unit 26 — Common kanji (set A)
+{k:'意',on:'イ',kun:'',m:['intention','meaning'],u:26,un:'Common',w:[['意味','いみ','meaning'],['意見','いけん','opinion'],['注意','ちゅうい','caution']]},
+{k:'英',on:'エイ',kun:'',m:['English','talented'],u:26,un:'Common',w:[['英語','えいご','English'],['英国','えいこく','Britain']]},
+{k:'運',on:'ウン',kun:'はこ(ぶ)',m:['carry','transport','luck'],u:26,un:'Common',w:[['運動','うんどう','exercise'],['運転','うんてん','driving'],['幸運','こううん','good luck']]},
+{k:'映',on:'エイ',kun:'うつ(る)',m:['project','reflect'],u:26,un:'Common',w:[['映画','えいが','movie'],['上映','じょうえい','screening']]},
+{k:'遠',on:'エン',kun:'とお(い)',m:['far','distant'],u:26,un:'Common',w:[['遠い','とおい','far'],['遠足','えんそく','excursion']]},
+{k:'画',on:'ガ・カク',kun:'',m:['picture','plan','stroke'],u:26,un:'Common',w:[['映画','えいが','movie'],['漫画','まんが','manga'],['計画','けいかく','plan']]},
+{k:'回',on:'カイ',kun:'まわ(る)',m:['turn','times','around'],u:26,un:'Common',w:[['回る','まわる','to turn'],['今回','こんかい','this time'],['回数','かいすう','number of times']]},
+{k:'界',on:'カイ',kun:'',m:['world','boundary'],u:26,un:'Common',w:[['世界','せかい','world'],['業界','ぎょうかい','industry']]},
+{k:'活',on:'カツ',kun:'',m:['lively','active','life'],u:26,un:'Common',w:[['生活','せいかつ','daily life'],['活動','かつどう','activity']]},
+{k:'間',on:'カン',kun:'あいだ',m:['interval','space','between'],u:26,un:'Common',w:[['時間','じかん','time'],['人間','にんげん','human being'],['間違い','まちがい','mistake']]},
+{k:'漢',on:'カン',kun:'',m:['China','Chinese character'],u:26,un:'Common',w:[['漢字','かんじ','kanji'],['漢語','かんご','Chinese-derived word']]},
+{k:'近',on:'キン',kun:'ちか(い)',m:['near','close'],u:26,un:'Common',w:[['近い','ちかい','near'],['近所','きんじょ','neighborhood'],['最近','さいきん','recently']]},
+{k:'計',on:'ケイ',kun:'はか(る)',m:['calculate','measure','plan'],u:26,un:'Common',w:[['計画','けいかく','plan'],['時計','とけい','clock / watch'],['合計','ごうけい','total']]},
+{k:'元',on:'ゲン',kun:'もと',m:['origin','source','former'],u:26,un:'Common',w:[['元気','げんき','energetic / healthy'],['元々','もともと','originally']]},
+{k:'合',on:'ゴウ',kun:'あ(う)',m:['fit','combine','meet'],u:26,un:'Common',w:[['合う','あう','to match'],['合計','ごうけい','total'],['試合','しあい','game / match']]},
+{k:'交',on:'コウ',kun:'まじ(わる)',m:['intersect','exchange','mix'],u:26,un:'Common',w:[['交通','こうつう','traffic'],['交換','こうかん','exchange']]},
+{k:'公',on:'コウ',kun:'おおやけ',m:['public','official'],u:26,un:'Common',w:[['公園','こうえん','park'],['公共','こうきょう','public'],['公式','こうしき','official']]},
+{k:'工',on:'コウ',kun:'',m:['construction','work','craft'],u:26,un:'Common',w:[['工場','こうじょう','factory'],['工事','こうじ','construction work']]},
+// Unit 27 — Common kanji (set B)
+{k:'次',on:'ジ',kun:'つぎ',m:['next','following'],u:27,un:'Common',w:[['次','つぎ','next'],['目次','もくじ','table of contents']]},
+{k:'自',on:'ジ',kun:'みずか(ら)',m:['self','oneself'],u:27,un:'Common',w:[['自分','じぶん','oneself'],['自動車','じどうしゃ','automobile'],['自由','じゆう','freedom']]},
+{k:'質',on:'シツ',kun:'',m:['quality','nature'],u:27,un:'Common',w:[['品質','ひんしつ','quality'],['質問','しつもん','question']]},
+{k:'写',on:'シャ',kun:'うつ(す)',m:['copy','photograph'],u:27,un:'Common',w:[['写真','しゃしん','photograph'],['写す','うつす','to copy']]},
+{k:'首',on:'シュ',kun:'くび',m:['neck','head'],u:27,un:'Common',w:[['首','くび','neck'],['首都','しゅと','capital city'],['首相','しゅしょう','prime minister']]},
+{k:'数',on:'スウ',kun:'かず',m:['number','several'],u:27,un:'Common',w:[['数','かず','number'],['数学','すうがく','mathematics'],['数字','すうじ','numeral']]},
+{k:'星',on:'セイ',kun:'ほし',m:['star'],u:27,un:'Common',w:[['星','ほし','star'],['星座','せいざ','constellation']]},
+{k:'切',on:'セツ',kun:'き(る)',m:['cut','important'],u:27,un:'Common',w:[['切る','きる','to cut'],['大切','たいせつ','important'],['親切','しんせつ','kind']]},
+{k:'全',on:'ゼン',kun:'すべ(て)',m:['all','complete'],u:27,un:'Common',w:[['全部','ぜんぶ','all'],['全員','ぜんいん','everyone'],['完全','かんぜん','perfect']]},
+{k:'線',on:'セン',kun:'',m:['line','track'],u:27,un:'Common',w:[['新幹線','しんかんせん','Shinkansen'],['路線','ろせん','route']]},
+{k:'代',on:'ダイ',kun:'か(わる)',m:['substitute','generation','era','fee'],u:27,un:'Common',w:[['時代','じだい','era'],['代金','だいきん','price']]},
+{k:'題',on:'ダイ',kun:'',m:['title','topic','problem'],u:27,un:'Common',w:[['問題','もんだい','problem'],['題名','だいめい','title']]},
+{k:'地',on:'チ',kun:'',m:['ground','earth','place'],u:27,un:'Common',w:[['地図','ちず','map'],['地下','ちか','underground'],['土地','とち','land']]},
+{k:'注',on:'チュウ',kun:'そそ(ぐ)',m:['pour','note','pay attention'],u:27,un:'Common',w:[['注意','ちゅうい','caution'],['注文','ちゅうもん','order'],['注射','ちゅうしゃ','injection']]},
+{k:'鉄',on:'テツ',kun:'',m:['iron','steel'],u:27,un:'Common',w:[['鉄道','てつどう','railroad'],['地下鉄','ちかてつ','subway']]},
+{k:'転',on:'テン',kun:'ころ(がる)',m:['roll','turn','change'],u:27,un:'Common',w:[['自転車','じてんしゃ','bicycle'],['運転','うんてん','driving']]},
+{k:'度',on:'ド',kun:'たび',m:['degree','times'],u:27,un:'Common',w:[['今度','こんど','this time / next time'],['何度','なんど','how many times'],['温度','おんど','temperature']]},
+{k:'特',on:'トク',kun:'',m:['special','particular'],u:27,un:'Common',w:[['特別','とくべつ','special'],['特に','とくに','especially']]},
+// Unit 28 — Common kanji (set C)
+{k:'番',on:'バン',kun:'',m:['number','turn','guard'],u:28,un:'Common',w:[['番号','ばんごう','number'],['一番','いちばん','number one / most'],['番組','ばんぐみ','TV program']]},
+{k:'美',on:'ビ',kun:'うつく(しい)',m:['beautiful'],u:28,un:'Common',w:[['美しい','うつくしい','beautiful'],['美術','びじゅつ','art'],['美容','びよう','beauty']]},
+{k:'不',on:'フ・ブ',kun:'',m:['not','un-','negative prefix'],u:28,un:'Common',w:[['不安','ふあん','anxiety'],['不思議','ふしぎ','mysterious'],['不便','ふべん','inconvenient']]},
+{k:'別',on:'ベツ',kun:'わか(れる)',m:['separate','different'],u:28,un:'Common',w:[['特別','とくべつ','special'],['別れる','わかれる','to separate']]},
+{k:'方',on:'ホウ',kun:'かた',m:['direction','way','person'],u:28,un:'Common',w:[['方法','ほうほう','method'],['行き方','いきかた','how to go']]},
+{k:'味',on:'ミ',kun:'あじ',m:['taste','flavor','interest'],u:28,un:'Common',w:[['味','あじ','taste'],['興味','きょうみ','interest'],['調味料','ちょうみりょう','seasoning']]},
+{k:'有',on:'ユウ',kun:'あ(る)',m:['exist','have'],u:28,un:'Common',w:[['有名','ゆうめい','famous'],['有利','ゆうり','advantageous']]},
+{k:'用',on:'ヨウ',kun:'もち(いる)',m:['use','purpose'],u:28,un:'Common',w:[['用意','ようい','preparation'],['使用','しよう','use']]},
+{k:'利',on:'リ',kun:'',m:['profit','benefit'],u:28,un:'Common',w:[['利用','りよう','use / utilization'],['便利','べんり','convenient']]},
+{k:'両',on:'リョウ',kun:'',m:['both','two'],u:28,un:'Common',w:[['両方','りょうほう','both sides'],['両親','りょうしん','both parents'],['両替','りょうがえ','currency exchange']]},
+{k:'料',on:'リョウ',kun:'',m:['fee','material','ingredient'],u:28,un:'Common',w:[['料理','りょうり','cooking / cuisine'],['料金','りょうきん','fee']]},
+// Unit 29 — Common kanji (set D)
+{k:'信',on:'シン',kun:'',m:['trust','believe','message'],u:29,un:'Common',w:[['信じる','しんじる','to believe'],['自信','じしん','confidence']]},
+{k:'親',on:'シン',kun:'おや',m:['parent','intimate'],u:29,un:'Common',w:[['親','おや','parent'],['親切','しんせつ','kind'],['両親','りょうしん','both parents']]},
+{k:'成',on:'セイ',kun:'な(る)',m:['become','accomplish'],u:29,un:'Common',w:[['成功','せいこう','success'],['完成','かんせい','completion'],['成長','せいちょう','growth']]},
+{k:'生',on:'セイ',kun:'い(きる)',m:['life','live','birth'],u:29,un:'Common',w:[['生活','せいかつ','life'],['誕生','たんじょう','birth'],['生まれる','うまれる','to be born']]},
+{k:'正',on:'セイ・ショウ',kun:'ただ(しい)',m:['correct','right','proper'],u:29,un:'Common',w:[['正しい','ただしい','correct'],['正式','せいしき','formal'],['正直','しょうじき','honest']]},
+{k:'晴',on:'セイ',kun:'は(れる)',m:['clear weather','fine'],u:29,un:'Common',w:[['晴れ','はれ','clear weather'],['晴れる','はれる','to clear up']]},
+{k:'増',on:'ゾウ',kun:'ふ(える)',m:['increase'],u:29,un:'Common',w:[['増える','ふえる','to increase'],['増加','ぞうか','increase']]},
+{k:'減',on:'ゲン',kun:'へ(る)',m:['decrease'],u:29,un:'Common',w:[['減る','へる','to decrease'],['削減','さくげん','reduction']]},
+{k:'続',on:'ゾク',kun:'つづ(く)',m:['continue','succeed'],u:29,un:'Common',w:[['続く','つづく','to continue'],['続ける','つづける','to keep on'],['手続き','てつづき','procedure']]},
+{k:'急',on:'キュウ',kun:'いそ(ぐ)',m:['urgent','hurry'],u:29,un:'Common',w:[['急ぐ','いそぐ','to hurry'],['急行','きゅうこう','express train'],['急に','きゅうに','suddenly']]},
+{k:'静',on:'セイ',kun:'しず(か)',m:['quiet','calm'],u:29,un:'Common',w:[['静か','しずか','quiet'],['静止','せいし','standstill']]},
+{k:'忙',on:'ボウ',kun:'いそが(しい)',m:['busy'],u:29,un:'Common',w:[['忙しい','いそがしい','busy']]},
+{k:'暇',on:'カ',kun:'ひま',m:['free time','spare'],u:29,un:'Common',w:[['暇','ひま','free time'],['休暇','きゅうか','vacation']]},
+{k:'覚',on:'カク',kun:'おぼ(える)',m:['memorize','wake up','sense'],u:29,un:'Common',w:[['覚える','おぼえる','to memorize'],['目覚める','めざめる','to wake up']]},
+{k:'忘',on:'ボウ',kun:'わす(れる)',m:['forget'],u:29,un:'Common',w:[['忘れる','わすれる','to forget'],['忘れ物','わすれもの','forgotten item']]},
+{k:'確',on:'カク',kun:'たし(か)',m:['certain','confirm','definite'],u:29,un:'Common',w:[['確認','かくにん','confirmation'],['明確','めいかく','clear / definite']]},
+{k:'集',on:'シュウ',kun:'あつ(める)',m:['collect','gather'],u:29,un:'Common',w:[['集める','あつめる','to collect'],['集まる','あつまる','to gather'],['集中','しゅうちゅう','concentration']]},
+{k:'消',on:'ショウ',kun:'き(える)',m:['disappear','erase','extinguish'],u:29,un:'Common',w:[['消える','きえる','to disappear'],['消費','しょうひ','consumption']]},
+// Unit 30 — Common kanji (set E)
+{k:'関',on:'カン',kun:'',m:['related','connection'],u:30,un:'Common',w:[['関係','かんけい','relationship'],['関西','かんさい','Kansai'],['関連','かんれん','related']]},
+{k:'感',on:'カン',kun:'かん(じる)',m:['feeling','sense','emotion'],u:30,un:'Common',w:[['感じる','かんじる','to feel'],['感謝','かんしゃ','gratitude'],['感情','かんじょう','emotion']]},
+{k:'完',on:'カン',kun:'',m:['complete','perfect'],u:30,un:'Common',w:[['完成','かんせい','completion'],['完全','かんぜん','perfect']]},
+{k:'機',on:'キ',kun:'はた',m:['machine','opportunity'],u:30,un:'Common',w:[['機会','きかい','opportunity'],['飛行機','ひこうき','airplane'],['洗濯機','せんたくき','washing machine']]},
+{k:'客',on:'キャク',kun:'',m:['guest','customer'],u:30,un:'Common',w:[['客','きゃく','customer'],['お客さん','おきゃくさん','customer'],['乗客','じょうきゃく','passenger']]},
+{k:'共',on:'キョウ',kun:'とも',m:['together','common'],u:30,un:'Common',w:[['共に','ともに','together'],['共通','きょうつう','common']]},
+{k:'協',on:'キョウ',kun:'',m:['cooperate'],u:30,un:'Common',w:[['協力','きょうりょく','cooperation'],['協会','きょうかい','association']]},
+{k:'経',on:'ケイ',kun:'へ(る)',m:['pass through','manage'],u:30,un:'Common',w:[['経済','けいざい','economy'],['経験','けいけん','experience'],['経営','けいえい','management']]},
+{k:'現',on:'ゲン',kun:'あらわ(れる)',m:['present','appear','current'],u:30,un:'Common',w:[['現在','げんざい','present / now'],['現実','げんじつ','reality']]},
+{k:'結',on:'ケツ',kun:'むす(ぶ)',m:['tie','bind','result'],u:30,un:'Common',w:[['結果','けっか','result'],['結婚','けっこん','marriage'],['結ぶ','むすぶ','to tie']]},
+{k:'健',on:'ケン',kun:'すこ(やか)',m:['healthy','strong'],u:30,un:'Common',w:[['健康','けんこう','health'],['健全','けんぜん','sound / healthy']]},
+{k:'研',on:'ケン',kun:'',m:['polish','research'],u:30,un:'Common',w:[['研究','けんきゅう','research'],['研修','けんしゅう','training']]},
+{k:'個',on:'コ',kun:'',m:['individual','counter for objects'],u:30,un:'Common',w:[['個人','こじん','individual'],['三個','さんこ','3 items']]},
+{k:'好',on:'コウ',kun:'す(く)',m:['like','fond'],u:30,un:'Common',w:[['好き','すき','like'],['好む','このむ','to prefer']]},
+// Unit 31 — Common kanji (set F)
+{k:'最',on:'サイ',kun:'もっと(も)',m:['most','extremely'],u:31,un:'Common',w:[['最初','さいしょ','first'],['最後','さいご','last'],['最高','さいこう','best']]},
+{k:'参',on:'サン',kun:'まい(る)',m:['visit','participate'],u:31,un:'Common',w:[['参加','さんか','participation'],['参考','さんこう','reference']]},
+{k:'残',on:'ザン',kun:'のこ(る)',m:['remain','leftover'],u:31,un:'Common',w:[['残る','のこる','to remain'],['残念','ざんねん','regrettable'],['残業','ざんぎょう','overtime']]},
+{k:'散',on:'サン',kun:'ち(る)',m:['scatter','disperse'],u:31,un:'Common',w:[['散歩','さんぽ','walk / stroll'],['散る','ちる','to fall / scatter']]},
+{k:'再',on:'サイ',kun:'ふたた(び)',m:['again','re-'],u:31,un:'Common',w:[['再び','ふたたび','again'],['再開','さいかい','resumption']]},
+{k:'支',on:'シ',kun:'ささ(える)',m:['support','branch'],u:31,un:'Common',w:[['支える','ささえる','to support'],['支社','ししゃ','branch office']]},
+{k:'辞',on:'ジ',kun:'や(める)',m:['resign','dictionary'],u:31,un:'Common',w:[['辞書','じしょ','dictionary'],['辞める','やめる','to resign']]},
+{k:'収',on:'シュウ',kun:'おさ(める)',m:['income','collect'],u:31,un:'Common',w:[['収入','しゅうにゅう','income'],['回収','かいしゅう','recovery']]},
+{k:'就',on:'シュウ',kun:'つ(く)',m:['take up a job'],u:31,un:'Common',w:[['就職','しゅうしょく','getting a job'],['就く','つく','to take up']]},
+{k:'術',on:'ジュツ',kun:'',m:['art','technique','skill'],u:31,un:'Common',w:[['技術','ぎじゅつ','technology'],['美術','びじゅつ','art']]},
+{k:'準',on:'ジュン',kun:'',m:['standard','prepare'],u:31,un:'Common',w:[['準備','じゅんび','preparation'],['基準','きじゅん','standard']]},
+{k:'順',on:'ジュン',kun:'',m:['order','sequence'],u:31,un:'Common',w:[['順番','じゅんばん','turn / order'],['順調','じゅんちょう','going smoothly']]},
+{k:'所',on:'ショ',kun:'ところ',m:['place','location'],u:31,un:'Common',w:[['場所','ばしょ','place'],['住所','じゅうしょ','address']]},
+{k:'状',on:'ジョウ',kun:'',m:['situation','condition'],u:31,un:'Common',w:[['状況','じょうきょう','situation'],['症状','しょうじょう','symptoms']]},
+{k:'情',on:'ジョウ',kun:'',m:['emotion','feeling','information'],u:31,un:'Common',w:[['情報','じょうほう','information'],['感情','かんじょう','emotion']]},
+{k:'職',on:'ショク',kun:'',m:['job','occupation'],u:31,un:'Common',w:[['職業','しょくぎょう','occupation'],['就職','しゅうしょく','getting a job']]},
+{k:'進',on:'シン',kun:'すす(む)',m:['advance','proceed'],u:31,un:'Common',w:[['進む','すすむ','to advance'],['進化','しんか','evolution']]},
+// Unit 32 — Common kanji (set G)
+{k:'税',on:'ゼイ',kun:'',m:['tax'],u:32,un:'Common',w:[['税金','ぜいきん','tax'],['消費税','しょうひぜい','consumption tax']]},
+{k:'説',on:'セツ',kun:'と(く)',m:['explain','theory'],u:32,un:'Common',w:[['説明','せつめい','explanation'],['小説','しょうせつ','novel']]},
+{k:'選',on:'セン',kun:'えら(ぶ)',m:['select','choose','elect'],u:32,un:'Common',w:[['選ぶ','えらぶ','to choose'],['選手','せんしゅ','player / athlete']]},
+{k:'然',on:'ゼン',kun:'',m:['natural','like that'],u:32,un:'Common',w:[['自然','しぜん','nature'],['当然','とうぜん','of course'],['突然','とつぜん','suddenly']]},
+{k:'相',on:'ソウ',kun:'あい',m:['mutual','minister'],u:32,un:'Common',w:[['相手','あいて','partner'],['首相','しゅしょう','prime minister'],['相談','そうだん','consultation']]},
+{k:'対',on:'タイ',kun:'',m:['against','pair','versus'],u:32,un:'Common',w:[['反対','はんたい','opposition'],['絶対','ぜったい','absolute'],['対する','たいする','against']]},
+{k:'達',on:'タツ',kun:'',m:['attain','plural suffix'],u:32,un:'Common',w:[['友達','ともだち','friend'],['達成','たっせい','achievement']]},
+{k:'段',on:'ダン',kun:'',m:['step','grade','level'],u:32,un:'Common',w:[['段階','だんかい','stage'],['手段','しゅだん','means / method'],['階段','かいだん','stairs']]},
+{k:'値',on:'チ',kun:'ね',m:['value','price'],u:32,un:'Common',w:[['値段','ねだん','price'],['価値','かち','value']]},
+{k:'調',on:'チョウ',kun:'しら(べる)',m:['investigate','adjust','tone'],u:32,un:'Common',w:[['調査','ちょうさ','investigation'],['調べる','しらべる','to investigate'],['調子','ちょうし','condition']]},
+{k:'治',on:'チ',kun:'なお(る)',m:['heal','govern'],u:32,un:'Common',w:[['治る','なおる','to heal'],['政治','せいじ','politics'],['治療','ちりょう','treatment']]},
+{k:'得',on:'トク',kun:'え(る)',m:['gain','acquire','benefit'],u:32,un:'Common',w:[['得る','える','to obtain'],['得意','とくい','good at'],['納得','なっとく','acceptance']]},
+{k:'独',on:'ドク',kun:'ひと(り)',m:['alone','unique','Germany'],u:32,un:'Common',w:[['独身','どくしん','single'],['独立','どくりつ','independence']]},
+{k:'投',on:'トウ',kun:'な(げる)',m:['throw','invest'],u:32,un:'Common',w:[['投げる','なげる','to throw'],['投票','とうひょう','vote'],['投資','とうし','investment']]},
+{k:'当',on:'トウ',kun:'あ(たる)',m:['hit','correct','current'],u:32,un:'Common',w:[['当たる','あたる','to hit'],['担当','たんとう','in charge'],['当然','とうぜん','naturally']]},
+// Unit 33 — Common kanji (set H)
+{k:'農',on:'ノウ',kun:'',m:['agriculture','farming'],u:33,un:'Common',w:[['農業','のうぎょう','agriculture'],['農家','のうか','farm household']]},
+{k:'発',on:'ハツ',kun:'',m:['departure','emit','send out'],u:33,un:'Common',w:[['出発','しゅっぱつ','departure'],['発表','はっぴょう','announcement'],['発音','はつおん','pronunciation']]},
+{k:'反',on:'ハン',kun:'',m:['anti','oppose','reverse'],u:33,un:'Common',w:[['反対','はんたい','opposition'],['反省','はんせい','reflection'],['反応','はんのう','reaction']]},
+{k:'必',on:'ヒツ',kun:'かなら(ず)',m:['certain','necessary'],u:33,un:'Common',w:[['必要','ひつよう','necessary'],['必ず','かならず','certainly']]},
+{k:'表',on:'ヒョウ',kun:'おもて',m:['surface','express','table'],u:33,un:'Common',w:[['発表','はっぴょう','announcement'],['表現','ひょうげん','expression'],['表面','ひょうめん','surface']]},
+{k:'付',on:'フ',kun:'つ(く)',m:['attach','adhere'],u:33,un:'Common',w:[['付く','つく','to attach'],['気付く','きづく','to notice'],['受け付け','うけつけ','reception']]},
+{k:'普',on:'フ',kun:'',m:['general','universal'],u:33,un:'Common',w:[['普通','ふつう','ordinary'],['普及','ふきゅう','spread']]},
+{k:'複',on:'フク',kun:'',m:['double','duplicate'],u:33,un:'Common',w:[['複雑','ふくざつ','complicated'],['複数','ふくすう','plural']]},
+{k:'平',on:'ヘイ',kun:'たい(ら)',m:['flat','peace','ordinary'],u:33,un:'Common',w:[['平和','へいわ','peace'],['平ら','たいら','flat'],['平均','へいきん','average']]},
+{k:'便',on:'ベン',kun:'',m:['convenient','letter','flight'],u:33,un:'Common',w:[['便利','べんり','convenient'],['不便','ふべん','inconvenient'],['郵便','ゆうびん','mail']]},
+{k:'保',on:'ホ',kun:'たも(つ)',m:['keep','preserve','guarantee'],u:33,un:'Common',w:[['保護','ほご','protection'],['保険','ほけん','insurance']]},
+{k:'報',on:'ホウ',kun:'',m:['report','reward','news'],u:33,un:'Common',w:[['情報','じょうほう','information'],['報告','ほうこく','report']]},
+{k:'末',on:'マツ',kun:'すえ',m:['end','tip'],u:33,un:'Common',w:[['週末','しゅうまつ','weekend'],['月末','つきずえ','end of month']]},
+{k:'満',on:'マン',kun:'み(たす)',m:['full','satisfy'],u:33,un:'Common',w:[['満足','まんぞく','satisfaction'],['満員','まんいん','full capacity']]},
+{k:'命',on:'メイ',kun:'いのち',m:['life','command','fate'],u:33,un:'Common',w:[['命令','めいれい','command'],['生命','せいめい','life'],['運命','うんめい','fate']]},
+{k:'迷',on:'メイ',kun:'まよ(う)',m:['lost','confused'],u:33,un:'Common',w:[['迷う','まよう','to be lost'],['迷子','まいご','lost child'],['迷惑','めいわく','nuisance']]},
+// Unit 34 — Common kanji (set I)
+{k:'役',on:'ヤク',kun:'',m:['role','use','official'],u:34,un:'Common',w:[['役に立つ','やくにたつ','to be useful'],['役割','やくわり','role'],['市役所','しやくしょ','city hall']]},
+{k:'約',on:'ヤク',kun:'',m:['approximately','promise'],u:34,un:'Common',w:[['約束','やくそく','promise'],['予約','よやく','reservation']]},
+{k:'様',on:'ヨウ',kun:'さま',m:['manner','way','Mr/Ms (honorific)'],u:34,un:'Common',w:[['様子','ようす','appearance'],['お客様','おきゃくさま','customer (hon.)']]},
+{k:'要',on:'ヨウ',kun:'い(る)',m:['need','require','important'],u:34,un:'Common',w:[['必要','ひつよう','necessary'],['重要','じゅうよう','important'],['要求','ようきゅう','demand']]},
+{k:'予',on:'ヨ',kun:'',m:['beforehand','previous'],u:34,un:'Common',w:[['予定','よてい','schedule / plan'],['予約','よやく','reservation'],['天気予報','てんきよほう','weather forecast']]},
+{k:'落',on:'ラク',kun:'お(ちる)',m:['fall','drop'],u:34,un:'Common',w:[['落ちる','おちる','to fall'],['落ち着く','おちつく','to calm down']]},
+{k:'流',on:'リュウ',kun:'なが(れる)',m:['flow','stream','trend'],u:34,un:'Common',w:[['流れる','ながれる','to flow'],['流行','りゅうこう','trend']]},
+{k:'良',on:'リョウ',kun:'よ(い)',m:['good','well'],u:34,un:'Common',w:[['良い','よい','good'],['良心','りょうしん','conscience'],['改良','かいりょう','improvement']]},
+{k:'論',on:'ロン',kun:'',m:['discuss','argue','theory'],u:34,un:'Common',w:[['議論','ぎろん','debate'],['理論','りろん','theory'],['論文','ろんぶん','thesis']]},
+{k:'和',on:'ワ',kun:'やわ(らぐ)',m:['harmony','Japan','peace'],u:34,un:'Common',w:[['平和','へいわ','peace'],['和食','わしょく','Japanese food']]},
+{k:'割',on:'カツ',kun:'わ(る)',m:['divide','proportion','discount'],u:34,un:'Common',w:[['割る','わる','to divide'],['割引','わりびき','discount'],['役割','やくわり','role']]},
+// Unit 35 — More kanji
+{k:'決',on:'ケツ',kun:'き(める)',m:['decide','determine'],u:35,un:'Common',w:[['決める','きめる','to decide'],['決定','けってい','decision'],['解決','かいけつ','solution']]},
+{k:'余',on:'ヨ',kun:'あま(る)',m:['surplus','excess'],u:35,un:'Common',w:[['余る','あまる','to be leftover'],['余裕','よゆう','leeway / margin']]},
+{k:'政',on:'セイ',kun:'',m:['government','politics'],u:35,un:'Common',w:[['政治','せいじ','politics'],['政府','せいふ','government']]},
+{k:'制',on:'セイ',kun:'',m:['system','control'],u:35,un:'Common',w:[['制度','せいど','system'],['制限','せいげん','restriction'],['制服','せいふく','uniform']]},
+{k:'争',on:'ソウ',kun:'あらそ(う)',m:['contend','dispute','war'],u:35,un:'Common',w:[['競争','きょうそう','competition'],['戦争','せんそう','war']]},
+{k:'能',on:'ノウ',kun:'',m:['ability','talent'],u:35,un:'Common',w:[['能力','のうりょく','ability'],['才能','さいのう','talent'],['可能','かのう','possible']]},
+{k:'配',on:'ハイ',kun:'くば(る)',m:['distribute','arrange'],u:35,un:'Common',w:[['心配','しんぱい','worry'],['配る','くばる','to distribute']]},
+{k:'判',on:'ハン',kun:'',m:['judge','distinguish'],u:35,un:'Common',w:[['判断','はんだん','judgment'],['批判','ひはん','criticism']]},
+{k:'整',on:'セイ',kun:'ととの(える)',m:['arrange','regulate'],u:35,un:'Common',w:[['整理','せいり','arrangement'],['整える','ととのえる','to arrange']]},
+{k:'断',on:'ダン',kun:'こと(わる)',m:['cut off','refuse','decide'],u:35,un:'Common',w:[['断る','ことわる','to refuse'],['判断','はんだん','judgment']]},
+{k:'移',on:'イ',kun:'うつ(る)',m:['move','shift','transfer'],u:35,un:'Common',w:[['移動','いどう','movement'],['移転','いてん','relocation'],['移住','いじゅう','emigration']]},
+{k:'育',on:'イク',kun:'そだ(てる)',m:['raise','nurture','grow'],u:35,un:'Common',w:[['育てる','そだてる','to raise'],['教育','きょういく','education']]},
+{k:'引',on:'イン',kun:'ひ(く)',m:['pull','draw'],u:35,un:'Common',w:[['引く','ひく','to pull'],['引っ越し','ひっこし','moving house'],['値引き','ねびき','discount']]},
+// Unit 36 — Final set A
+{k:'押',on:'オウ',kun:'お(す)',m:['push','press'],u:36,un:'Common',w:[['押す','おす','to push'],['押さえる','おさえる','to hold down']]},
+{k:'横',on:'オウ',kun:'よこ',m:['side','beside','horizontal'],u:36,un:'Common',w:[['横','よこ','side / horizontal'],['横断','おうだん','crossing']]},
+{k:'温',on:'オン',kun:'あたた(かい)',m:['warm','temperature'],u:36,un:'Common',w:[['温かい','あたたかい','warm'],['気温','きおん','temperature'],['温泉','おんせん','hot spring']]},
+{k:'加',on:'カ',kun:'くわ(える)',m:['add','join'],u:36,un:'Common',w:[['加える','くわえる','to add'],['参加','さんか','participation'],['加速','かそく','acceleration']]},
+{k:'改',on:'カイ',kun:'あらた(める)',m:['reform','change','correct'],u:36,un:'Common',w:[['改善','かいぜん','improvement'],['改める','あらためる','to change']]},
+{k:'各',on:'カク',kun:'おのおの',m:['each','every'],u:36,un:'Common',w:[['各地','かくち','each region'],['各自','かくじ','each person']]},
+{k:'額',on:'ガク',kun:'ひたい',m:['forehead','frame','amount'],u:36,un:'Common',w:[['金額','きんがく','amount of money'],['額','ひたい','forehead']]},
+{k:'義',on:'ギ',kun:'',m:['righteousness','meaning','relation'],u:36,un:'Common',w:[['意義','いぎ','meaning / significance'],['正義','せいぎ','justice'],['義務','ぎむ','duty']]},
+{k:'技',on:'ギ',kun:'わざ',m:['skill','technique'],u:36,un:'Common',w:[['技術','ぎじゅつ','technology / skill'],['技能','ぎのう','technical skill']]},
+{k:'供',on:'キョウ',kun:'そな(える)',m:['offer','accompany'],u:36,un:'Common',w:[['子供','こども','child'],['提供','ていきょう','provision']]},
+{k:'競',on:'キョウ・ケイ',kun:'きそ(う)',m:['compete','race'],u:36,un:'Common',w:[['競争','きょうそう','competition'],['競馬','けいば','horse racing']]},
+{k:'区',on:'ク',kun:'',m:['ward','district','section'],u:36,un:'Common',w:[['区','く','ward'],['地区','ちく','area'],['区別','くべつ','distinction']]},
+{k:'限',on:'ゲン',kun:'かぎ(る)',m:['limit','restrict'],u:36,un:'Common',w:[['制限','せいげん','restriction'],['限界','げんかい','limit'],['限る','かぎる','to limit']]},
+// Unit 37 — Final set B
+{k:'固',on:'コ',kun:'かた(い)',m:['harden','firm','solid'],u:37,un:'Common',w:[['固い','かたい','hard / firm'],['固定','こてい','fixed']]},
+{k:'効',on:'コウ',kun:'き(く)',m:['effect','efficacy'],u:37,un:'Common',w:[['効果','こうか','effect'],['有効','ゆうこう','valid / effective']]},
+{k:'構',on:'コウ',kun:'かま(える)',m:['build','structure','care'],u:37,un:'Common',w:[['構造','こうぞう','structure'],['構わない','かまわない','it doesn\'t matter']]},
+{k:'候',on:'コウ',kun:'',m:['season','wait','climate'],u:37,un:'Common',w:[['気候','きこう','climate'],['候補','こうほ','candidate']]},
+{k:'際',on:'サイ',kun:'きわ',m:['occasion','edge'],u:37,un:'Common',w:[['国際','こくさい','international'],['実際','じっさい','actually']]},
+{k:'材',on:'ザイ',kun:'',m:['material','timber'],u:37,un:'Common',w:[['材料','ざいりょう','ingredients / materials'],['木材','もくざい','lumber']]},
+{k:'歳',on:'サイ',kun:'',m:['age','year (counter)'],u:37,un:'Common',w:[['三歳','さんさい','3 years old'],['二十歳','はたち','20 years old']]},
+{k:'察',on:'サツ',kun:'',m:['guess','discern','police'],u:37,un:'Common',w:[['警察','けいさつ','police'],['観察','かんさつ','observation']]},
+{k:'雑',on:'ザツ',kun:'',m:['miscellaneous','rough'],u:37,un:'Common',w:[['雑誌','ざっし','magazine'],['複雑','ふくざつ','complicated']]},
+{k:'識',on:'シキ',kun:'',m:['know','discriminate','consciousness'],u:37,un:'Common',w:[['知識','ちしき','knowledge'],['常識','じょうしき','common sense']]},
+{k:'式',on:'シキ',kun:'',m:['ceremony','style','formula'],u:37,un:'Common',w:[['卒業式','そつぎょうしき','graduation'],['公式','こうしき','official']]},
+{k:'辛',on:'シン',kun:'から(い)',m:['spicy','painful','hot (taste)'],u:37,un:'Common',w:[['辛い','からい','spicy'],['辛抱','しんぼう','patience']]},
+{k:'示',on:'ジ',kun:'しめ(す)',m:['show','indicate'],u:37,un:'Common',w:[['示す','しめす','to show'],['展示','てんじ','exhibition'],['指示','しじ','instruction']]},
+{k:'似',on:'ジ',kun:'に(る)',m:['resemble','like'],u:37,un:'Common',w:[['似る','にる','to resemble'],['似ている','にている','to look like']]},
+{k:'射',on:'シャ',kun:'い(る)',m:['shoot','inject'],u:37,un:'Common',w:[['注射','ちゅうしゃ','injection'],['放射','ほうしゃ','radiation']]},
+{k:'謝',on:'シャ',kun:'あやま(る)',m:['apologize','thank'],u:37,un:'Common',w:[['感謝','かんしゃ','gratitude'],['謝る','あやまる','to apologize']]},
+// Unit 38 — Final set C
+{k:'宿',on:'シュク',kun:'やど',m:['lodging','inn','stay'],u:38,un:'Common',w:[['宿','やど','inn'],['宿題','しゅくだい','homework'],['宿泊','しゅくはく','lodging']]},
+{k:'招',on:'ショウ',kun:'まね(く)',m:['invite','beckon'],u:38,un:'Common',w:[['招待','しょうたい','invitation'],['招く','まねく','to invite']]},
+{k:'賞',on:'ショウ',kun:'',m:['prize','reward'],u:38,un:'Common',w:[['賞','しょう','prize'],['入賞','にゅうしょう','winning a prize']]},
+{k:'象',on:'ショウ・ゾウ',kun:'',m:['elephant','image','phenomenon'],u:38,un:'Common',w:[['印象','いんしょう','impression'],['象','ぞう','elephant']]},
+{k:'申',on:'シン',kun:'もう(す)',m:['say (humble)','report'],u:38,un:'Common',w:[['申す','もうす','to say (humble)'],['申し込む','もうしこむ','to apply']]},
+{k:'身',on:'シン',kun:'み',m:['body','oneself'],u:38,un:'Common',w:[['身体','しんたい','body'],['自身','じしん','oneself']]},
+{k:'清',on:'セイ',kun:'きよ(い)',m:['clean','pure'],u:38,un:'Common',w:[['清潔','せいけつ','clean'],['清書','せいしょ','fair copy']]},
+{k:'盛',on:'セイ',kun:'さか(ん)',m:['prosperous','heap up'],u:38,un:'Common',w:[['盛ん','さかん','flourishing'],['盛り上がる','もりあがる','to get excited']]},
+{k:'責',on:'セキ',kun:'',m:['responsibility','blame'],u:38,un:'Common',w:[['責任','せきにん','responsibility'],['自責','じせき','self-blame']]},
+{k:'績',on:'セキ',kun:'',m:['achievement','result'],u:38,un:'Common',w:[['成績','せいせき','grades / results'],['実績','じっせき','track record']]},
+{k:'泊',on:'ハク',kun:'と(まる)',m:['stay overnight','anchor'],u:38,un:'Common',w:[['泊まる','とまる','to stay overnight'],['宿泊','しゅくはく','lodging']]},
+{k:'破',on:'ハ',kun:'やぶ(る)',m:['break','tear','defeat'],u:38,un:'Common',w:[['破る','やぶる','to tear / defeat'],['突破','とっぱ','breakthrough']]},
+{k:'敗',on:'ハイ',kun:'やぶ(れる)',m:['defeat','fail'],u:38,un:'Common',w:[['失敗','しっぱい','failure'],['敗れる','やぶれる','to be defeated']]},
+{k:'拾',on:'シュウ',kun:'ひろ(う)',m:['pick up'],u:38,un:'Common',w:[['拾う','ひろう','to pick up'],['拾い物','ひろいもの','found item']]},
+{k:'捨',on:'シャ',kun:'す(てる)',m:['discard','throw away'],u:38,un:'Common',w:[['捨てる','すてる','to throw away']]},
+{k:'渡',on:'ト',kun:'わた(る)',m:['cross','hand over'],u:38,un:'Common',w:[['渡る','わたる','to cross'],['渡す','わたす','to hand over']]},
+// Unit 39 — Final set D
+{k:'誕',on:'タン',kun:'',m:['birth'],u:39,un:'Common',w:[['誕生','たんじょう','birth'],['誕生日','たんじょうび','birthday']]},
+{k:'追',on:'ツイ',kun:'お(う)',m:['pursue','chase'],u:39,un:'Common',w:[['追う','おう','to chase'],['追加','ついか','addition']]},
+{k:'的',on:'テキ',kun:'まと',m:['target','suffix -like / -ish'],u:39,un:'Common',w:[['目的','もくてき','purpose'],['的','まと','target'],['具体的','ぐたいてき','concrete']]},
+{k:'適',on:'テキ',kun:'',m:['suitable','fit'],u:39,un:'Common',w:[['適当','てきとう','appropriate'],['適切','てきせつ','suitable']]},
+{k:'展',on:'テン',kun:'',m:['exhibit','expand'],u:39,un:'Common',w:[['展示','てんじ','exhibition'],['発展','はってん','development']]},
+{k:'泣',on:'キュウ',kun:'な(く)',m:['cry','weep'],u:39,un:'Common',w:[['泣く','なく','to cry']]},
+{k:'皮',on:'ヒ',kun:'かわ',m:['skin','leather','peel'],u:39,un:'Common',w:[['皮','かわ','skin / peel'],['皮膚','ひふ','skin'],['皮肉','ひにく','irony']]},
+{k:'氷',on:'ヒョウ',kun:'こおり',m:['ice'],u:39,un:'Common',w:[['氷','こおり','ice'],['氷河','ひょうが','glacier']]},
+{k:'払',on:'フツ',kun:'はら(う)',m:['pay','clear away'],u:39,un:'Common',w:[['払う','はらう','to pay'],['支払い','しはらい','payment']]},
+{k:'豊',on:'ホウ',kun:'ゆた(か)',m:['abundant','rich'],u:39,un:'Common',w:[['豊か','ゆたか','abundant / rich'],['豊富','ほうふ','abundant']]},
+{k:'務',on:'ム',kun:'つと(める)',m:['duty','serve'],u:39,un:'Common',w:[['業務','ぎょうむ','business duties'],['公務員','こうむいん','public servant']]},
+{k:'眠',on:'ミン',kun:'ねむ(る)',m:['sleep','sleepy'],u:39,un:'Common',w:[['眠る','ねむる','to sleep'],['眠い','ねむい','sleepy']]},
+{k:'鏡',on:'キョウ',kun:'かがみ',m:['mirror'],u:39,un:'Common',w:[['鏡','かがみ','mirror'],['眼鏡','めがね','glasses']]},
+{k:'換',on:'カン',kun:'か(える)',m:['exchange','replace'],u:39,un:'Common',w:[['乗り換え','のりかえ','transfer'],['交換','こうかん','exchange']]},
+// Unit 40 — Final set E
+{k:'巻',on:'カン',kun:'ま(く)',m:['roll','volume'],u:40,un:'Common',w:[['巻く','まく','to roll'],['一巻','いっかん','volume 1']]},
+{k:'缶',on:'カン',kun:'かん',m:['can (container)'],u:40,un:'Common',w:[['缶','かん','can'],['缶詰','かんづめ','canned food']]},
+{k:'幹',on:'カン',kun:'みき',m:['trunk (tree)','main'],u:40,un:'Common',w:[['新幹線','しんかんせん','Shinkansen'],['幹部','かんぶ','executive']]},
+{k:'観',on:'カン',kun:'',m:['view','observe'],u:40,un:'Common',w:[['観光','かんこう','sightseeing'],['観察','かんさつ','observation']]},
+{k:'記',on:'キ',kun:'しる(す)',m:['record','note'],u:40,un:'Common',w:[['日記','にっき','diary'],['記念','きねん','commemoration'],['記事','きじ','article']]},
+{k:'帰',on:'キ',kun:'かえ(る)',m:['return'],u:40,un:'Common',w:[['帰る','かえる','to return home'],['帰国','きこく','return to country']]},
+{k:'期',on:'キ',kun:'',m:['term','period'],u:40,un:'Common',w:[['期間','きかん','period'],['期待','きたい','expectation'],['学期','がっき','school term']]},
+{k:'季',on:'キ',kun:'',m:['season'],u:40,un:'Common',w:[['季節','きせつ','season'],['四季','しき','four seasons']]},
+{k:'規',on:'キ',kun:'',m:['standard','rule'],u:40,un:'Common',w:[['規則','きそく','rule'],['規模','きぼ','scale']]},
+{k:'基',on:'キ',kun:'もと',m:['base','foundation'],u:40,un:'Common',w:[['基本','きほん','foundation'],['基準','きじゅん','standard']]},
+{k:'棋',on:'キ',kun:'',m:['chess piece','shogi'],u:40,un:'Common',w:[['将棋','しょうぎ','shogi']]},
+{k:'危',on:'キ',kun:'あぶ(ない)',m:['dangerous','risky'],u:40,un:'Common',w:[['危ない','あぶない','dangerous'],['危険','きけん','danger']]},
+{k:'機',on:'キ',kun:'',m:['machine','occasion'],u:40,un:'Common',w:[['機会','きかい','chance'],['飛行機','ひこうき','airplane']]},
+{k:'疑',on:'ギ',kun:'うたが(う)',m:['doubt','suspect'],u:40,un:'Common',w:[['疑う','うたがう','to doubt'],['疑問','ぎもん','doubt / question']]},
+{k:'球',on:'キュウ',kun:'たま',m:['ball','sphere'],u:40,un:'Common',w:[['野球','やきゅう','baseball'],['地球','ちきゅう','Earth']]},
+// Unit 41 — Final set F
+{k:'究',on:'キュウ',kun:'きわ(める)',m:['research','investigate'],u:41,un:'Common',w:[['研究','けんきゅう','research'],['究明','きゅうめい','investigation']]},
+{k:'拒',on:'キョ',kun:'こば(む)',m:['refuse','reject'],u:41,un:'Common',w:[['拒否','きょひ','refusal'],['拒む','こばむ','to refuse']]},
+{k:'居',on:'キョ',kun:'い(る)',m:['be','live','stay'],u:41,un:'Common',w:[['居る','いる','to be (animate)'],['居間','いま','living room']]},
+{k:'許',on:'キョ',kun:'ゆる(す)',m:['permit','forgive'],u:41,un:'Common',w:[['許可','きょか','permission'],['許す','ゆるす','to forgive']]},
+{k:'句',on:'ク',kun:'',m:['phrase','clause'],u:41,un:'Common',w:[['俳句','はいく','haiku'],['文句','もんく','complaint']]},
+{k:'苦',on:'ク',kun:'くる(しい)',m:['painful','bitter','suffering'],u:41,un:'Common',w:[['苦労','くろう','hardship'],['苦手','にがて','weak point']]},
+{k:'具',on:'グ',kun:'',m:['tool','equipment'],u:41,un:'Common',w:[['道具','どうぐ','tool'],['家具','かぐ','furniture'],['具体的','ぐたいてき','concrete']]},
+{k:'係',on:'ケイ',kun:'かかり',m:['person in charge','relationship'],u:41,un:'Common',w:[['係','かかり','person in charge'],['関係','かんけい','relationship']]},
+{k:'警',on:'ケイ',kun:'',m:['warn','police'],u:41,un:'Common',w:[['警察','けいさつ','police'],['警告','けいこく','warning']]},
+{k:'権',on:'ケン',kun:'',m:['right','authority','power'],u:41,un:'Common',w:[['権利','けんり','right'],['人権','じんけん','human rights']]},
+{k:'硬',on:'コウ',kun:'かた(い)',m:['hard','stiff'],u:41,un:'Common',w:[['硬い','かたい','hard'],['硬化','こうか','hardening']]},
+{k:'号',on:'ゴウ',kun:'',m:['number','cry','signal'],u:41,un:'Common',w:[['番号','ばんごう','number'],['号','ごう','number / issue']]},
+{k:'困',on:'コン',kun:'こま(る)',m:['troubled','difficulty'],u:41,un:'Common',w:[['困る','こまる','to be troubled'],['困難','こんなん','difficulty']]},
+{k:'婚',on:'コン',kun:'',m:['marriage'],u:41,un:'Common',w:[['結婚','けっこん','marriage'],['婚約','こんやく','engagement']]},
+// Unit 42 — Final set G
+{k:'差',on:'サ',kun:'さ(す)',m:['difference','insert'],u:42,un:'Common',w:[['差','さ','difference'],['差別','さべつ','discrimination']]},
+{k:'再',on:'サイ',kun:'ふたた(び)',m:['again'],u:42,un:'Common',w:[['再び','ふたたび','again'],['再生','さいせい','reproduction']]},
+{k:'罪',on:'ザイ',kun:'つみ',m:['crime','guilt'],u:42,un:'Common',w:[['犯罪','はんざい','crime'],['罪','つみ','guilt / crime']]},
+{k:'詩',on:'シ',kun:'',m:['poem','poetry'],u:42,un:'Common',w:[['詩','し','poem'],['詩人','しじん','poet']]},
+{k:'士',on:'シ',kun:'',m:['samurai','person'],u:42,un:'Common',w:[['武士','ぶし','warrior'],['博士','はかせ','PhD / doctor']]},
+{k:'史',on:'シ',kun:'',m:['history'],u:42,un:'Common',w:[['歴史','れきし','history'],['史上','しじょう','in history']]},
+{k:'紙',on:'シ',kun:'かみ',m:['paper'],u:42,un:'Common',w:[['紙','かみ','paper'],['手紙','てがみ','letter'],['新聞紙','しんぶんし','newspaper']]},
+{k:'指',on:'シ',kun:'ゆび',m:['finger','point'],u:42,un:'Common',w:[['指','ゆび','finger'],['指示','しじ','instruction']]},
+{k:'市',on:'シ',kun:'いち',m:['city'],u:42,un:'Common',w:[['神戸市','こうべし','Kobe City'],['市役所','しやくしょ','city hall']]},
+{k:'試',on:'シ',kun:'こころ(みる)',m:['test','try'],u:42,un:'Common',w:[['試験','しけん','exam'],['試合','しあい','game/match']]},
+// Unit 43 — Final set H
+{k:'辺',on:'ヘン',kun:'あたり',m:['area','side','vicinity'],u:43,un:'Common',w:[['辺り','あたり','area around'],['近辺','きんぺん','vicinity']]},
+{k:'変',on:'ヘン',kun:'か(わる)',m:['change','strange'],u:43,un:'Common',w:[['変わる','かわる','to change'],['大変','たいへん','difficult']]},
+{k:'編',on:'ヘン',kun:'あ(む)',m:['knit','compile','volume'],u:43,un:'Common',w:[['編む','あむ','to knit'],['編集','へんしゅう','editing']]},
+{k:'勉',on:'ベン',kun:'',m:['study hard'],u:43,un:'Common',w:[['勉強','べんきょう','study']]},
+{k:'暮',on:'ボ',kun:'く(れる)',m:['dusk','live','end of year'],u:43,un:'Common',w:[['暮らす','くらす','to live / spend time'],['暮れる','くれる','to get dark']]},
+{k:'暴',on:'ボウ',kun:'あば(れる)',m:['violent','wild'],u:43,un:'Common',w:[['暴力','ぼうりょく','violence'],['暴れる','あばれる','to be violent']]},
+{k:'訪',on:'ホウ',kun:'おとず(れる)',m:['visit'],u:43,un:'Common',w:[['訪問','ほうもん','visit'],['訪れる','おとずれる','to visit']]},
+{k:'忘',on:'ボウ',kun:'わす(れる)',m:['forget'],u:43,un:'Common',w:[['忘れる','わすれる','to forget'],['忘年会','ぼうねんかい','year-end party']]},
+{k:'棒',on:'ボウ',kun:'',m:['rod','stick'],u:43,un:'Common',w:[['棒','ぼう','stick / rod']]},
+{k:'亡',on:'ボウ・モウ',kun:'な(い)',m:['deceased','lost'],u:43,un:'Common',w:[['死亡','しぼう','death'],['亡くなる','なくなる','to pass away']]},
+{k:'末',on:'マツ',kun:'すえ',m:['end'],u:43,un:'Common',w:[['週末','しゅうまつ','weekend'],['年末','ねんまつ','year-end']]},
+{k:'密',on:'ミツ',kun:'',m:['secret','dense','close'],u:43,un:'Common',w:[['秘密','ひみつ','secret'],['密度','みつど','density']]},
+{k:'脈',on:'ミャク',kun:'',m:['pulse','vein','chain'],u:43,un:'Common',w:[['脈','みゃく','pulse'],['山脈','さんみゃく','mountain range']]},
+// Unit 44 — Final set I
+{k:'夢',on:'ム',kun:'ゆめ',m:['dream'],u:44,un:'Common',w:[['夢','ゆめ','dream'],['夢中','むちゅう','absorbed in']]},
+{k:'眼',on:'ガン',kun:'め',m:['eye','eyeball'],u:44,un:'Common',w:[['眼鏡','めがね','glasses'],['眼科','がんか','ophthalmology']]},
+{k:'訳',on:'ヤク',kun:'わけ',m:['translate','reason'],u:44,un:'Common',w:[['翻訳','ほんやく','translation'],['訳','わけ','reason']]},
+{k:'柔',on:'ジュウ',kun:'やわ(らかい)',m:['soft','gentle'],u:44,un:'Common',w:[['柔らかい','やわらかい','soft'],['柔道','じゅうどう','judo']]},
+{k:'戻',on:'',kun:'もど(る)',m:['return','come back'],u:44,un:'Common',w:[['戻る','もどる','to return'],['戻す','もどす','to put back']]},
+{k:'踏',on:'トウ',kun:'ふ(む)',m:['step on','tread'],u:44,un:'Common',w:[['踏む','ふむ','to step on'],['踏切','ふみきり','railroad crossing']]},
+{k:'輝',on:'キ',kun:'かがや(く)',m:['shine','glitter'],u:44,un:'Common',w:[['輝く','かがやく','to shine'],['輝き','かがやき','brilliance']]},
+{k:'濃',on:'ノウ',kun:'こ(い)',m:['dark','thick','dense'],u:44,un:'Common',w:[['濃い','こい','dark / thick'],['濃度','のうど','concentration']]},
+{k:'淡',on:'タン',kun:'あわ(い)',m:['light','faint','pale'],u:44,un:'Common',w:[['淡い','あわい','light / faint'],['淡水','たんすい','fresh water']]},
+{k:'岸',on:'ガン',kun:'きし',m:['bank','shore','coast'],u:44,un:'Common',w:[['海岸','かいがん','coast'],['岸','きし','shore']]},
+{k:'倒',on:'トウ',kun:'たお(れる)',m:['fall','topple'],u:44,un:'Common',w:[['倒れる','たおれる','to fall down'],['倒す','たおす','to knock down']]},
+{k:'逃',on:'トウ',kun:'に(げる)',m:['escape','run away'],u:44,un:'Common',w:[['逃げる','にげる','to escape'],['逃す','のがす','to let escape']]},
+// Unit 45 — Final set J
+{k:'届',on:'',kun:'とど(ける)',m:['deliver','reach'],u:45,un:'Common',w:[['届ける','とどける','to deliver'],['届く','とどく','to reach']]},
+{k:'悩',on:'ノウ',kun:'なや(む)',m:['worry','be troubled'],u:45,un:'Common',w:[['悩む','なやむ','to be troubled'],['悩み','なやみ','worry / problem']]},
+{k:'耕',on:'コウ',kun:'たがや(す)',m:['cultivate','plow'],u:45,un:'Common',w:[['耕す','たがやす','to cultivate'],['農耕','のうこう','farming']]},
+{k:'穀',on:'コク',kun:'',m:['grain','cereal'],u:45,un:'Common',w:[['穀物','こくもつ','grain / cereal'],['穀倉','こくそう','granary']]},
+{k:'浮',on:'フ',kun:'う(かぶ)',m:['float','rise to surface'],u:45,un:'Common',w:[['浮かぶ','うかぶ','to float'],['浮く','うく','to float']]},
+{k:'翻',on:'ホン',kun:'ひるがえ(る)',m:['翻る','translate','flutter'],u:45,un:'Common',w:[['翻訳','ほんやく','translation'],['翻る','ひるがえる','to flutter']]},
+{k:'把',on:'ハ',kun:'',m:['grasp','hold'],u:45,un:'Common',w:[['把握','はあく','grasp / understanding']]},
+{k:'拝',on:'ハイ',kun:'おが(む)',m:['worship','receive (humble)'],u:45,un:'Common',w:[['拝む','おがむ','to worship'],['拝見','はいけん','viewing (humble)']]},
+{k:'班',on:'ハン',kun:'',m:['group','squad'],u:45,un:'Common',w:[['班','はん','group / squad'],['班長','はんちょう','group leader']]},
+{k:'悔',on:'カイ',kun:'く(やむ)',m:['regret','repent'],u:45,un:'Common',w:[['後悔','こうかい','regret'],['悔しい','くやしい','regrettable']]},
+{k:'恵',on:'ケイ',kun:'めぐ(む)',m:['blessing','grace'],u:45,un:'Common',w:[['知恵','ちえ','wisdom'],['恵まれる','めぐまれる','to be blessed']]},
+{k:'緊',on:'キン',kun:'',m:['tense','tight'],u:45,un:'Common',w:[['緊張','きんちょう','tension'],['緊急','きんきゅう','emergency']]},
+{k:'恐',on:'キョウ',kun:'おそ(ろしい)',m:['fear','afraid'],u:45,un:'Common',w:[['恐ろしい','おそろしい','frightening'],['恐れる','おそれる','to fear']]},
+];
+
+// ═══════════════════════════════════════════════════════════
+//  APP STATE
+// ═══════════════════════════════════════════════════════════
+let currentMode = 'kanji'; // 'kanji' | 'words'
+let selectedIds  = new Set();
+let filterUnit   = 'all';
+
+// Quiz state
+const cfg = { dir: 'jp-en', fmt: 'choice', order: 'shuffle' };
+let quizItems   = [];
+let quizIdx     = 0;
+let quizCorrect = 0;
+let quizWrong   = 0;
+let missed      = [];
+let answered    = false;
+
+// ── Deduplicate by kanji character ──
+const seen = new Set();
+const KANJI_DEDUP = KANJI.filter(k => {
+  if (seen.has(k.k)) return false;
+  seen.add(k.k);
+  return true;
+});
+
+// ═══════════════════════════════════════════════════════════
+//  SCREEN MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BROWSE
+// ═══════════════════════════════════════════════════════════
+function startBrowse(mode) {
+  currentMode = mode;
+  selectedIds.clear();
+  filterUnit = 'all';
+  document.getElementById('browse-title').textContent = mode === 'kanji' ? 'Select Kanji to Study' : 'Select Kanji (words mode)';
+  buildFilterRow();
+  renderGrid();
+  showScreen('browse');
+}
+
+function buildFilterRow() {
+  const units = [...new Set(KANJI_DEDUP.map(k => k.u))].sort((a,b) => a-b);
+  const row = document.getElementById('filter-row');
+  row.innerHTML = '';
+
+  const all = btn('All', 'all', filterUnit === 'all');
+  row.appendChild(all);
+
+  // Group by unit name
+  const unitNames = {};
+  KANJI_DEDUP.forEach(k => { if (!unitNames[k.u]) unitNames[k.u] = k.un; });
+
+  units.forEach(u => {
+    const b = btn(`U${u} ${unitNames[u]}`, u, filterUnit === u);
+    row.appendChild(b);
+  });
+}
+
+function btn(label, val, active) {
+  const b = document.createElement('button');
+  b.className = 'filter-btn' + (active ? ' active' : '');
+  b.textContent = label;
+  b.onclick = () => { filterUnit = val; buildFilterRow(); renderGrid(); };
+  return b;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('kanji-grid');
+  grid.innerHTML = '';
+  const items = filterUnit === 'all' ? KANJI_DEDUP : KANJI_DEDUP.filter(k => k.u === filterUnit);
+  items.forEach((k, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'kanji-cell' + (selectedIds.has(k.k) ? ' selected' : '');
+    cell.innerHTML = `<span class="kchar">${k.k}</span><span class="kmean">${k.m[0]}</span>`;
+    cell.onclick = () => toggleSel(k.k, cell);
+    grid.appendChild(cell);
+  });
+  updateSelCount();
+}
+
+function toggleSel(char, cell) {
+  if (selectedIds.has(char)) { selectedIds.delete(char); cell.classList.remove('selected'); }
+  else { selectedIds.add(char); cell.classList.add('selected'); }
+  updateSelCount();
+}
+
+function updateSelCount() {
+  const n = selectedIds.size;
+  document.getElementById('sel-count').textContent = `${n} selected`;
+  document.getElementById('start-quiz-btn').disabled = n < 2;
+}
+
+function selectAll() {
+  const items = filterUnit === 'all' ? KANJI_DEDUP : KANJI_DEDUP.filter(k => k.u === filterUnit);
+  items.forEach(k => selectedIds.add(k.k));
+  renderGrid();
+}
+
+function clearSel() {
+  selectedIds.clear();
+  renderGrid();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  QUIZ CONFIG
+// ═══════════════════════════════════════════════════════════
+function goToConfig() {
+  const n = selectedIds.size;
+  document.getElementById('config-info').textContent =
+    `${n} kanji selected · ${currentMode === 'kanji' ? 'Plain Kanji mode' : 'Vocabulary Words mode'}`;
+  showScreen('quizconfig');
+}
+
+function setOpt(el, group) {
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  cfg[group] = el.dataset.val;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  QUIZ BUILD
+// ═══════════════════════════════════════════════════════════
+function buildQuizItems() {
+  const sel = KANJI_DEDUP.filter(k => selectedIds.has(k.k));
+  let items = [];
+
+  if (currentMode === 'kanji') {
+    sel.forEach(k => {
+      const dirs = cfg.dir === 'both' ? ['jp-en','en-jp'] : [cfg.dir];
+      dirs.forEach(dir => items.push({ type:'kanji', k, dir }));
+    });
+  } else {
+    sel.forEach(k => {
+      k.w.forEach(([word, reading, meaning]) => {
+        const dirs = cfg.dir === 'both' ? ['jp-en','en-jp'] : [cfg.dir];
+        dirs.forEach(dir => items.push({ type:'word', k, word, reading, meaning, dir }));
+      });
+    });
+  }
+
+  if (cfg.order === 'shuffle') {
+    for (let i = items.length-1; i > 0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+  }
+  return items;
+}
+
+function startQuiz() {
+  quizItems   = buildQuizItems();
+  quizIdx     = 0;
+  quizCorrect = 0;
+  quizWrong   = 0;
+  missed      = [];
+  answered    = false;
+  showScreen('quiz');
+  showQuestion();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  QUIZ RENDER
+// ═══════════════════════════════════════════════════════════
+function showQuestion() {
+  if (quizIdx >= quizItems.length) { showResults(); return; }
+  answered = false;
+
+  const item = quizItems[quizIdx];
+  const pct  = (quizIdx / quizItems.length) * 100;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-txt').textContent = `${quizIdx + 1} / ${quizItems.length}`;
+  document.getElementById('score-ok').textContent  = `✓ ${quizCorrect}`;
+  document.getElementById('score-no').textContent  = `✗ ${quizWrong}`;
+
+  const hero    = document.getElementById('q-hero');
+  const prompt  = document.getElementById('q-prompt');
+  const reading = document.getElementById('q-reading');
+  const hint    = document.getElementById('q-hint');
+  const choices = document.getElementById('q-choices');
+  const input   = document.getElementById('q-input-wrap');
+  const reveal  = document.getElementById('q-reveal');
+  const nextBtn = document.getElementById('next-btn');
+  const modeTag = document.getElementById('q-mode-tag');
+
+  modeTag.textContent = currentMode === 'kanji' ? '漢字' : '言葉';
+  reveal.classList.remove('show');
+  nextBtn.style.display = 'none';
+  choices.innerHTML = '';
+  document.getElementById('q-input').value = '';
+
+  // ── Build prompt / hero ──
+  if (item.type === 'kanji') {
+    if (item.dir === 'jp-en') {
+      prompt.textContent = 'What does this kanji mean?';
+      hero.textContent = item.k.k;
+      hero.className = 'quiz-hero';
+      reading.textContent = item.k.on ? `On: ${item.k.on}` : '';
+      hint.textContent = item.k.kun ? `Kun: ${item.k.kun}` : '';
+    } else {
+      prompt.textContent = 'Which kanji means:';
+      hero.textContent = `"${item.k.m[0]}"`;
+      hero.className = 'quiz-hero';
+      reading.textContent = '';
+      hint.textContent = '';
+    }
+  } else {
+    if (item.dir === 'jp-en') {
+      prompt.textContent = 'What does this word mean?';
+      hero.textContent = item.word;
+      hero.className = 'quiz-hero word';
+      reading.textContent = item.reading;
+      hint.textContent = '';
+    } else {
+      prompt.textContent = 'How do you write in Japanese:';
+      hero.textContent = `"${item.meaning}"`;
+      hero.className = 'quiz-hero';
+      reading.textContent = '';
+      hint.textContent = '';
+    }
+  }
+
+  // ── Build answer options ──
+  if (cfg.fmt === 'choice') {
+    input.style.display = 'none';
+    choices.style.display = 'grid';
+
+    const correct = getCorrectAnswer(item);
+    const distractors = getDistractors(item, 3);
+    const opts = shuffle([correct, ...distractors]);
+
+    opts.forEach(opt => {
+      const b = document.createElement('button');
+      b.className = 'choice-btn';
+      b.textContent = opt;
+      b.onclick = () => checkChoice(b, opt, correct, item);
+      choices.appendChild(b);
+    });
+  } else {
+    choices.style.display = 'none';
+    input.style.display = 'block';
+    // bind enter key
+    const inp = document.getElementById('q-input');
+    inp.onkeydown = e => { if (e.key === 'Enter') checkTyped(); };
+    inp.focus();
+  }
+}
+
+function getCorrectAnswer(item) {
+  if (item.type === 'kanji') {
+    return item.dir === 'jp-en' ? item.k.m[0] : item.k.k;
+  } else {
+    return item.dir === 'jp-en' ? item.meaning : item.word;
+  }
+}
+
+function getDistractors(item, n) {
+  const pool = KANJI_DEDUP.filter(k => k.k !== item.k.k);
+  const shuffled = shuffle([...pool]).slice(0, 30);
+  const result = [];
+
+  if (item.type === 'kanji') {
+    if (item.dir === 'jp-en') {
+      shuffled.forEach(k => { if (result.length < n) result.push(k.m[0]); });
+    } else {
+      shuffled.forEach(k => { if (result.length < n) result.push(k.k); });
+    }
+  } else {
+    const wordPool = [];
+    shuffled.forEach(k => k.w.forEach(([w,r,m]) => wordPool.push({ w, r, m })));
+    const swp = shuffle(wordPool);
+    if (item.dir === 'jp-en') {
+      swp.forEach(wp => { if (result.length < n && wp.m !== item.meaning) result.push(wp.m); });
+    } else {
+      swp.forEach(wp => { if (result.length < n && wp.w !== item.word) result.push(wp.w); });
+    }
+  }
+  return result.slice(0, n);
+}
+
+function checkChoice(btn, chosen, correct, item) {
+  if (answered) return;
+  answered = true;
+  document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+
+  if (chosen === correct) {
+    btn.classList.add('correct');
+    quizCorrect++;
+  } else {
+    btn.classList.add('wrong');
+    quizWrong++;
+    missed.push(item);
+    // highlight correct
+    document.querySelectorAll('.choice-btn').forEach(b => {
+      if (b.textContent === correct) b.classList.add('correct');
+    });
+  }
+  showReveal(item);
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+function checkTyped() {
+  if (answered) return;
+  const inp = document.getElementById('q-input');
+  const raw = inp.value.trim();
+  if (!raw) return;
+  answered = true;
+
+  const item = quizItems[quizIdx];
+  const correct = getCorrectAnswer(item);
+  const ok = normalize(raw) === normalize(correct);
+
+  inp.style.borderColor = ok ? 'var(--green)' : 'var(--red)';
+  inp.disabled = true;
+
+  if (ok) { quizCorrect++; }
+  else { quizWrong++; missed.push(item); }
+
+  if (!ok) {
+    document.getElementById('reveal-label').textContent = 'Correct answer:';
+    document.getElementById('reveal-val').textContent   = correct;
+    document.getElementById('q-reveal').classList.add('show');
+  } else {
+    document.getElementById('reveal-label').textContent = '✓ Correct!';
+    document.getElementById('reveal-val').textContent   = correct;
+    document.getElementById('q-reveal').classList.add('show');
+  }
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+function showReveal(item) {
+  const reveal = document.getElementById('q-reveal');
+  if (item.type === 'kanji') {
+    document.getElementById('reveal-label').textContent = `Meanings: ${item.k.m.join(', ')}`;
+    document.getElementById('reveal-val').textContent   = item.k.k + ' — on: ' + (item.k.on||'—') + '  kun: ' + (item.k.kun||'—');
+  } else {
+    document.getElementById('reveal-label').textContent = `${item.word} (${item.reading})`;
+    document.getElementById('reveal-val').textContent   = item.meaning;
+  }
+  reveal.classList.add('show');
+}
+
+function nextQuestion() {
+  quizIdx++;
+  // reset input
+  const inp = document.getElementById('q-input');
+  inp.style.borderColor = '';
+  inp.disabled = false;
+  showQuestion();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RESULTS
+// ═══════════════════════════════════════════════════════════
+function showResults() {
+  const total = quizCorrect + quizWrong;
+  const pct   = total > 0 ? Math.round((quizCorrect / total) * 100) : 0;
+  let icon, title, sub;
+
+  if (pct >= 90)      { icon='🎉'; title='Excellent!'; sub='Nearly perfect — you\'ve mastered these!'; }
+  else if (pct >= 70) { icon='⭐'; title='Good job!';  sub='Strong performance — keep practicing!'; }
+  else if (pct >= 50) { icon='📖'; title='Keep going!'; sub='Halfway there — review the missed ones.'; }
+  else                { icon='💪'; title='Keep at it!'; sub='Practice makes perfect — try again!'; }
+
+  document.getElementById('res-icon').textContent = icon;
+  document.getElementById('res-pct').textContent  = pct + '%';
+  document.getElementById('res-pct').style.color  = pct >= 70 ? 'var(--green)' : pct >= 50 ? 'var(--gold)' : 'var(--red)';
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-sub').textContent   = sub;
+  document.getElementById('res-ok').textContent    = quizCorrect;
+  document.getElementById('res-no').textContent    = quizWrong;
+  document.getElementById('res-tot').textContent   = total;
+
+  const missedDiv = document.getElementById('res-missed');
+  if (missed.length > 0) {
+    const unique = [];
+    const seenK = new Set();
+    missed.forEach(m => { if (!seenK.has(m.k.k)) { seenK.add(m.k.k); unique.push(m); }});
+    missedDiv.innerHTML = '<h4>Review these:</h4>' +
+      unique.slice(0,12).map(m =>
+        `<div class="missed-item"><span class="missed-k">${m.k.k}</span><span class="missed-m">${m.k.m[0]} · on: ${m.k.on||'—'}</span></div>`
+      ).join('');
+  } else {
+    missedDiv.innerHTML = '<h4 style="color:var(--green)">No mistakes! Perfect round.</h4>';
+  }
+
+  showScreen('results');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function normalize(s) {
+  return s.toLowerCase().trim().replace(/[\s-]/g, '');
+}
+</script>
+</body>
+</html>
